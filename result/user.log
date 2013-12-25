@@ -1,0 +1,6 @@
+Dec 25 22:29:36 xen py_xc[8099]: cpumap at 0x7f1530006900, len=1
+Dec 25 22:29:36 xen py_xc[8099]: rsp=  0x7f15495d5ae0
+Dec 25 22:29:36 xen py_xc[8099]: __heap-2             0x70
+Dec 25 22:29:36 xen py_xc[8099]: __heap-1             0x24
+Dec 25 22:29:36 xen py_xc[8099]: Error Detection: cpu=999999
+Dec 25 22:29:36 xen py_xc[8099]: setting cpumap (0x7f1530025147.7), vcpu=0

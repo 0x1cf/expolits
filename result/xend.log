@@ -1,0 +1,276 @@
+[2013-12-25 22:01:29 6093] CRITICAL (SrvDaemon:232) Xend died due to signal 11!  Restarting it.
+[2013-12-25 22:01:29 6297] INFO (SrvDaemon:332) Xend Daemon started
+[2013-12-25 22:01:29 6297] INFO (SrvDaemon:336) Xend changeset: unavailable.
+[2013-12-25 22:01:29 6297] DEBUG (tcp:96) Listening on :8002
+[2013-12-25 22:01:32 6297] DEBUG (XendNode:332) pscsi record count: 1
+[2013-12-25 22:01:32 6297] DEBUG (XendCPUPool:747) recreate_active_pools
+[2013-12-25 22:01:32 6297] DEBUG (XendDomainInfo:151) XendDomainInfo.recreate({'max_vcpu_id': 1, 'cpu_time': 208952963328L, 'ssidref': 0, 'hvm': 0, 'shutdown_reason': 255, 'dying': 0, 'online_vcpus': 2, 'domid': 0, 'paused': 0, 'crashed': 0, 'running': 1, 'maxmem_kb': 17179869180L, 'shutdown': 0, 'mem_kb': 968184L, 'blocked': 0, 'handle': [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], 'cpupool': 0, 'name': 'Domain-0'})
+[2013-12-25 22:01:32 6297] INFO (XendDomainInfo:169) Recreating domain 0, UUID 00000000-0000-0000-0000-000000000000. at /local/domain/0
+[2013-12-25 22:01:32 6297] DEBUG (XendDomain:476) Adding Domain: 0
+[2013-12-25 22:01:32 6297] DEBUG (XendDomain:410) number of vcpus to use is 0
+[2013-12-25 22:01:32 6297] DEBUG (XendDomainInfo:1882) XendDomainInfo.handleShutdownWatch
+[2013-12-25 22:01:32 6297] WARNING (XendAPI:708) API call: VBD.set_device not found
+[2013-12-25 22:01:32 6297] WARNING (XendAPI:708) API call: VBD.set_type not found
+[2013-12-25 22:01:32 6297] WARNING (XendAPI:708) API call: session.get_all_records not found
+[2013-12-25 22:01:32 6297] WARNING (XendAPI:708) API call: event.get_record not found
+[2013-12-25 22:01:32 6297] WARNING (XendAPI:708) API call: event.get_all not found
+[2013-12-25 22:01:32 6297] WARNING (XendAPI:708) API call: VIF.set_device not found
+[2013-12-25 22:01:32 6297] WARNING (XendAPI:708) API call: VIF.set_MAC not found
+[2013-12-25 22:01:32 6297] WARNING (XendAPI:708) API call: VIF.set_MTU not found
+[2013-12-25 22:01:32 6297] WARNING (XendAPI:708) API call: debug.get_all not found
+[2013-12-25 22:01:32 6297] INFO (XMLRPCServer:161) Opening Unix domain socket XML-RPC server on /var/run/xend/xen-api.sock; authentication has been disabled for this server.
+[2013-12-25 22:01:32 6297] INFO (XMLRPCServer:161) Opening Unix domain socket XML-RPC server on /var/run/xend/xmlrpc.sock.
+[2013-12-25 22:07:56 6297] DEBUG (SrvServer:77) SrvServer.cleanup()
+[2013-12-25 22:07:56 6297] DEBUG (XMLRPCServer:251) XMLRPCServer.cleanup()
+[2013-12-25 22:07:56 6297] DEBUG (XMLRPCServer:251) XMLRPCServer.cleanup()
+[2013-12-25 22:07:56 6297] DEBUG (XendDomain:644) cleanup_domains
+[2013-12-25 22:07:56 6093] INFO (SrvDaemon:220) Xend exited with status 0.
+[2013-12-25 22:07:56 6562] INFO (SrvDaemon:332) Xend Daemon started
+[2013-12-25 22:07:56 6562] INFO (SrvDaemon:336) Xend changeset: unavailable.
+[2013-12-25 22:07:56 6562] DEBUG (tcp:96) Listening on :8002
+[2013-12-25 22:07:59 6562] DEBUG (XendNode:332) pscsi record count: 1
+[2013-12-25 22:07:59 6562] DEBUG (XendCPUPool:747) recreate_active_pools
+[2013-12-25 22:07:59 6562] DEBUG (XendDomainInfo:151) XendDomainInfo.recreate({'max_vcpu_id': 1, 'cpu_time': 221183456940L, 'ssidref': 0, 'hvm': 0, 'shutdown_reason': 255, 'dying': 0, 'online_vcpus': 2, 'domid': 0, 'paused': 0, 'crashed': 0, 'running': 1, 'maxmem_kb': 17179869180L, 'shutdown': 0, 'mem_kb': 968184L, 'blocked': 0, 'handle': [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], 'cpupool': 0, 'name': 'Domain-0'})
+[2013-12-25 22:07:59 6562] INFO (XendDomainInfo:169) Recreating domain 0, UUID 00000000-0000-0000-0000-000000000000. at /local/domain/0
+[2013-12-25 22:07:59 6562] DEBUG (XendDomain:476) Adding Domain: 0
+[2013-12-25 22:07:59 6562] DEBUG (XendDomain:410) number of vcpus to use is 0
+[2013-12-25 22:07:59 6562] DEBUG (XendDomainInfo:1882) XendDomainInfo.handleShutdownWatch
+[2013-12-25 22:07:59 6562] WARNING (XendAPI:708) API call: VBD.set_device not found
+[2013-12-25 22:07:59 6562] WARNING (XendAPI:708) API call: VBD.set_type not found
+[2013-12-25 22:07:59 6562] WARNING (XendAPI:708) API call: session.get_all_records not found
+[2013-12-25 22:07:59 6562] WARNING (XendAPI:708) API call: event.get_record not found
+[2013-12-25 22:07:59 6562] WARNING (XendAPI:708) API call: event.get_all not found
+[2013-12-25 22:07:59 6562] WARNING (XendAPI:708) API call: VIF.set_device not found
+[2013-12-25 22:07:59 6562] WARNING (XendAPI:708) API call: VIF.set_MAC not found
+[2013-12-25 22:07:59 6562] WARNING (XendAPI:708) API call: VIF.set_MTU not found
+[2013-12-25 22:07:59 6562] WARNING (XendAPI:708) API call: debug.get_all not found
+[2013-12-25 22:07:59 6562] INFO (XMLRPCServer:161) Opening Unix domain socket XML-RPC server on /var/run/xend/xen-api.sock; authentication has been disabled for this server.
+[2013-12-25 22:07:59 6562] INFO (XMLRPCServer:161) Opening Unix domain socket XML-RPC server on /var/run/xend/xmlrpc.sock.
+[2013-12-25 22:08:05 6561] CRITICAL (SrvDaemon:232) Xend died due to signal 11!  Restarting it.
+[2013-12-25 22:08:05 6656] INFO (SrvDaemon:332) Xend Daemon started
+[2013-12-25 22:08:05 6656] INFO (SrvDaemon:336) Xend changeset: unavailable.
+[2013-12-25 22:08:05 6656] DEBUG (tcp:96) Listening on :8002
+[2013-12-25 22:08:08 6656] DEBUG (XendNode:332) pscsi record count: 1
+[2013-12-25 22:08:08 6656] DEBUG (XendCPUPool:747) recreate_active_pools
+[2013-12-25 22:08:08 6656] DEBUG (XendDomainInfo:151) XendDomainInfo.recreate({'max_vcpu_id': 1, 'cpu_time': 222902242101L, 'ssidref': 0, 'hvm': 0, 'shutdown_reason': 255, 'dying': 0, 'online_vcpus': 2, 'domid': 0, 'paused': 0, 'crashed': 0, 'running': 1, 'maxmem_kb': 17179869180L, 'shutdown': 0, 'mem_kb': 968184L, 'blocked': 0, 'handle': [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], 'cpupool': 0, 'name': 'Domain-0'})
+[2013-12-25 22:08:08 6656] INFO (XendDomainInfo:169) Recreating domain 0, UUID 00000000-0000-0000-0000-000000000000. at /local/domain/0
+[2013-12-25 22:08:08 6656] DEBUG (XendDomain:476) Adding Domain: 0
+[2013-12-25 22:08:08 6656] DEBUG (XendDomainInfo:1882) XendDomainInfo.handleShutdownWatch
+[2013-12-25 22:08:08 6656] DEBUG (XendDomain:410) number of vcpus to use is 0
+[2013-12-25 22:08:08 6656] WARNING (XendAPI:708) API call: VBD.set_device not found
+[2013-12-25 22:08:08 6656] WARNING (XendAPI:708) API call: VBD.set_type not found
+[2013-12-25 22:08:08 6656] WARNING (XendAPI:708) API call: session.get_all_records not found
+[2013-12-25 22:08:08 6656] WARNING (XendAPI:708) API call: event.get_record not found
+[2013-12-25 22:08:08 6656] WARNING (XendAPI:708) API call: event.get_all not found
+[2013-12-25 22:08:08 6656] WARNING (XendAPI:708) API call: VIF.set_device not found
+[2013-12-25 22:08:08 6656] WARNING (XendAPI:708) API call: VIF.set_MAC not found
+[2013-12-25 22:08:08 6656] WARNING (XendAPI:708) API call: VIF.set_MTU not found
+[2013-12-25 22:08:08 6656] WARNING (XendAPI:708) API call: debug.get_all not found
+[2013-12-25 22:08:08 6656] INFO (XMLRPCServer:161) Opening Unix domain socket XML-RPC server on /var/run/xend/xen-api.sock; authentication has been disabled for this server.
+[2013-12-25 22:08:08 6656] INFO (XMLRPCServer:161) Opening Unix domain socket XML-RPC server on /var/run/xend/xmlrpc.sock.
+[2013-12-25 22:13:33 6656] DEBUG (SrvServer:77) SrvServer.cleanup()
+[2013-12-25 22:13:33 6656] DEBUG (XMLRPCServer:251) XMLRPCServer.cleanup()
+[2013-12-25 22:13:33 6656] DEBUG (XMLRPCServer:251) XMLRPCServer.cleanup()
+[2013-12-25 22:13:33 6656] DEBUG (XendDomain:644) cleanup_domains
+[2013-12-25 22:13:33 6561] INFO (SrvDaemon:220) Xend exited with status 0.
+[2013-12-25 22:13:33 6899] INFO (SrvDaemon:332) Xend Daemon started
+[2013-12-25 22:13:33 6899] INFO (SrvDaemon:336) Xend changeset: unavailable.
+[2013-12-25 22:13:33 6899] DEBUG (tcp:96) Listening on :8002
+[2013-12-25 22:13:36 6899] DEBUG (XendNode:332) pscsi record count: 1
+[2013-12-25 22:13:36 6899] DEBUG (XendCPUPool:747) recreate_active_pools
+[2013-12-25 22:13:36 6899] DEBUG (XendDomainInfo:151) XendDomainInfo.recreate({'max_vcpu_id': 1, 'cpu_time': 232958264017L, 'ssidref': 0, 'hvm': 0, 'shutdown_reason': 255, 'dying': 0, 'online_vcpus': 2, 'domid': 0, 'paused': 0, 'crashed': 0, 'running': 1, 'maxmem_kb': 17179869180L, 'shutdown': 0, 'mem_kb': 968184L, 'blocked': 0, 'handle': [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], 'cpupool': 0, 'name': 'Domain-0'})
+[2013-12-25 22:13:36 6899] INFO (XendDomainInfo:169) Recreating domain 0, UUID 00000000-0000-0000-0000-000000000000. at /local/domain/0
+[2013-12-25 22:13:36 6899] DEBUG (XendDomain:476) Adding Domain: 0
+[2013-12-25 22:13:36 6899] DEBUG (XendDomainInfo:1882) XendDomainInfo.handleShutdownWatch
+[2013-12-25 22:13:36 6899] DEBUG (XendDomain:410) number of vcpus to use is 0
+[2013-12-25 22:13:36 6899] WARNING (XendAPI:708) API call: VBD.set_device not found
+[2013-12-25 22:13:36 6899] WARNING (XendAPI:708) API call: VBD.set_type not found
+[2013-12-25 22:13:36 6899] WARNING (XendAPI:708) API call: session.get_all_records not found
+[2013-12-25 22:13:36 6899] WARNING (XendAPI:708) API call: event.get_record not found
+[2013-12-25 22:13:36 6899] WARNING (XendAPI:708) API call: event.get_all not found
+[2013-12-25 22:13:36 6899] WARNING (XendAPI:708) API call: VIF.set_device not found
+[2013-12-25 22:13:36 6899] WARNING (XendAPI:708) API call: VIF.set_MAC not found
+[2013-12-25 22:13:36 6899] WARNING (XendAPI:708) API call: VIF.set_MTU not found
+[2013-12-25 22:13:36 6899] WARNING (XendAPI:708) API call: debug.get_all not found
+[2013-12-25 22:13:36 6899] INFO (XMLRPCServer:161) Opening Unix domain socket XML-RPC server on /var/run/xend/xen-api.sock; authentication has been disabled for this server.
+[2013-12-25 22:13:36 6899] INFO (XMLRPCServer:161) Opening Unix domain socket XML-RPC server on /var/run/xend/xmlrpc.sock.
+[2013-12-25 22:13:59 6899] ERROR (XendDomain:1616) (22, 'Invalid argument')
+Traceback (most recent call last):
+  File "/usr/lib/python2.7/dist-packages/xen/xend/XendDomain.py", line 1613, in domain_pincpu
+    rc = xc.vcpu_setaffinity(dominfo.getDomid(), v, cpumap)
+Error: (22, 'Invalid argument')
+[2013-12-25 22:14:01 6899] ERROR (XendDomain:1616) (22, 'Invalid argument')
+Traceback (most recent call last):
+  File "/usr/lib/python2.7/dist-packages/xen/xend/XendDomain.py", line 1613, in domain_pincpu
+    rc = xc.vcpu_setaffinity(dominfo.getDomid(), v, cpumap)
+Error: (22, 'Invalid argument')
+[2013-12-25 22:16:40 6899] DEBUG (SrvServer:77) SrvServer.cleanup()
+[2013-12-25 22:16:40 6899] DEBUG (XMLRPCServer:251) XMLRPCServer.cleanup()
+[2013-12-25 22:16:40 6899] DEBUG (XMLRPCServer:251) XMLRPCServer.cleanup()
+[2013-12-25 22:16:40 6899] DEBUG (XendDomain:644) cleanup_domains
+[2013-12-25 22:16:40 6898] INFO (SrvDaemon:220) Xend exited with status 0.
+[2013-12-25 22:16:40 7186] INFO (SrvDaemon:332) Xend Daemon started
+[2013-12-25 22:16:40 7186] INFO (SrvDaemon:336) Xend changeset: unavailable.
+[2013-12-25 22:16:40 7186] DEBUG (tcp:96) Listening on :8002
+[2013-12-25 22:16:43 7186] DEBUG (XendNode:332) pscsi record count: 1
+[2013-12-25 22:16:43 7186] DEBUG (XendCPUPool:747) recreate_active_pools
+[2013-12-25 22:16:43 7186] DEBUG (XendDomainInfo:151) XendDomainInfo.recreate({'max_vcpu_id': 1, 'cpu_time': 242582029848L, 'ssidref': 0, 'hvm': 0, 'shutdown_reason': 255, 'dying': 0, 'online_vcpus': 2, 'domid': 0, 'paused': 0, 'crashed': 0, 'running': 1, 'maxmem_kb': 17179869180L, 'shutdown': 0, 'mem_kb': 968184L, 'blocked': 0, 'handle': [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], 'cpupool': 0, 'name': 'Domain-0'})
+[2013-12-25 22:16:43 7186] INFO (XendDomainInfo:169) Recreating domain 0, UUID 00000000-0000-0000-0000-000000000000. at /local/domain/0
+[2013-12-25 22:16:43 7186] DEBUG (XendDomain:476) Adding Domain: 0
+[2013-12-25 22:16:43 7186] DEBUG (XendDomain:410) number of vcpus to use is 0
+[2013-12-25 22:16:43 7186] DEBUG (XendDomainInfo:1882) XendDomainInfo.handleShutdownWatch
+[2013-12-25 22:16:43 7186] WARNING (XendAPI:708) API call: VBD.set_device not found
+[2013-12-25 22:16:43 7186] WARNING (XendAPI:708) API call: VBD.set_type not found
+[2013-12-25 22:16:43 7186] WARNING (XendAPI:708) API call: session.get_all_records not found
+[2013-12-25 22:16:43 7186] WARNING (XendAPI:708) API call: event.get_record not found
+[2013-12-25 22:16:43 7186] WARNING (XendAPI:708) API call: event.get_all not found
+[2013-12-25 22:16:43 7186] WARNING (XendAPI:708) API call: VIF.set_device not found
+[2013-12-25 22:16:43 7186] WARNING (XendAPI:708) API call: VIF.set_MAC not found
+[2013-12-25 22:16:43 7186] WARNING (XendAPI:708) API call: VIF.set_MTU not found
+[2013-12-25 22:16:43 7186] WARNING (XendAPI:708) API call: debug.get_all not found
+[2013-12-25 22:16:43 7186] INFO (XMLRPCServer:161) Opening Unix domain socket XML-RPC server on /var/run/xend/xen-api.sock; authentication has been disabled for this server.
+[2013-12-25 22:16:43 7186] INFO (XMLRPCServer:161) Opening Unix domain socket XML-RPC server on /var/run/xend/xmlrpc.sock.
+[2013-12-25 22:21:33 7186] DEBUG (SrvServer:77) SrvServer.cleanup()
+[2013-12-25 22:21:33 7186] DEBUG (XMLRPCServer:251) XMLRPCServer.cleanup()
+[2013-12-25 22:21:33 7186] DEBUG (XMLRPCServer:251) XMLRPCServer.cleanup()
+[2013-12-25 22:21:33 7186] DEBUG (XendDomain:644) cleanup_domains
+[2013-12-25 22:21:33 7185] INFO (SrvDaemon:220) Xend exited with status 0.
+[2013-12-25 22:21:33 7429] INFO (SrvDaemon:332) Xend Daemon started
+[2013-12-25 22:21:33 7429] INFO (SrvDaemon:336) Xend changeset: unavailable.
+[2013-12-25 22:21:33 7429] DEBUG (tcp:96) Listening on :8002
+[2013-12-25 22:21:36 7429] DEBUG (XendNode:332) pscsi record count: 1
+[2013-12-25 22:21:36 7429] DEBUG (XendCPUPool:747) recreate_active_pools
+[2013-12-25 22:21:36 7429] DEBUG (XendDomainInfo:151) XendDomainInfo.recreate({'max_vcpu_id': 1, 'cpu_time': 252421120973L, 'ssidref': 0, 'hvm': 0, 'shutdown_reason': 255, 'dying': 0, 'online_vcpus': 2, 'domid': 0, 'paused': 0, 'crashed': 0, 'running': 1, 'maxmem_kb': 17179869180L, 'shutdown': 0, 'mem_kb': 968184L, 'blocked': 0, 'handle': [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], 'cpupool': 0, 'name': 'Domain-0'})
+[2013-12-25 22:21:36 7429] INFO (XendDomainInfo:169) Recreating domain 0, UUID 00000000-0000-0000-0000-000000000000. at /local/domain/0
+[2013-12-25 22:21:36 7429] DEBUG (XendDomain:476) Adding Domain: 0
+[2013-12-25 22:21:36 7429] DEBUG (XendDomain:410) number of vcpus to use is 0
+[2013-12-25 22:21:36 7429] DEBUG (XendDomainInfo:1882) XendDomainInfo.handleShutdownWatch
+[2013-12-25 22:21:36 7429] WARNING (XendAPI:708) API call: VBD.set_device not found
+[2013-12-25 22:21:36 7429] WARNING (XendAPI:708) API call: VBD.set_type not found
+[2013-12-25 22:21:36 7429] WARNING (XendAPI:708) API call: session.get_all_records not found
+[2013-12-25 22:21:36 7429] WARNING (XendAPI:708) API call: event.get_record not found
+[2013-12-25 22:21:36 7429] WARNING (XendAPI:708) API call: event.get_all not found
+[2013-12-25 22:21:36 7429] WARNING (XendAPI:708) API call: VIF.set_device not found
+[2013-12-25 22:21:36 7429] WARNING (XendAPI:708) API call: VIF.set_MAC not found
+[2013-12-25 22:21:36 7429] WARNING (XendAPI:708) API call: VIF.set_MTU not found
+[2013-12-25 22:21:36 7429] WARNING (XendAPI:708) API call: debug.get_all not found
+[2013-12-25 22:21:36 7429] INFO (XMLRPCServer:161) Opening Unix domain socket XML-RPC server on /var/run/xend/xen-api.sock; authentication has been disabled for this server.
+[2013-12-25 22:21:36 7429] INFO (XMLRPCServer:161) Opening Unix domain socket XML-RPC server on /var/run/xend/xmlrpc.sock.
+[2013-12-25 22:21:56 7428] CRITICAL (SrvDaemon:232) Xend died due to signal 11!  Restarting it.
+[2013-12-25 22:21:56 7526] INFO (SrvDaemon:332) Xend Daemon started
+[2013-12-25 22:21:56 7526] INFO (SrvDaemon:336) Xend changeset: unavailable.
+[2013-12-25 22:21:56 7526] DEBUG (tcp:96) Listening on :8002
+[2013-12-25 22:21:59 7526] DEBUG (XendNode:332) pscsi record count: 1
+[2013-12-25 22:21:59 7526] DEBUG (XendCPUPool:747) recreate_active_pools
+[2013-12-25 22:21:59 7526] DEBUG (XendDomainInfo:151) XendDomainInfo.recreate({'max_vcpu_id': 1, 'cpu_time': 254492088068L, 'ssidref': 0, 'hvm': 0, 'shutdown_reason': 255, 'dying': 0, 'online_vcpus': 2, 'domid': 0, 'paused': 0, 'crashed': 0, 'running': 1, 'maxmem_kb': 17179869180L, 'shutdown': 0, 'mem_kb': 968184L, 'blocked': 0, 'handle': [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], 'cpupool': 0, 'name': 'Domain-0'})
+[2013-12-25 22:21:59 7526] INFO (XendDomainInfo:169) Recreating domain 0, UUID 00000000-0000-0000-0000-000000000000. at /local/domain/0
+[2013-12-25 22:21:59 7526] DEBUG (XendDomain:476) Adding Domain: 0
+[2013-12-25 22:21:59 7526] DEBUG (XendDomainInfo:1882) XendDomainInfo.handleShutdownWatch
+[2013-12-25 22:21:59 7526] DEBUG (XendDomain:410) number of vcpus to use is 0
+[2013-12-25 22:21:59 7526] WARNING (XendAPI:708) API call: VBD.set_device not found
+[2013-12-25 22:21:59 7526] WARNING (XendAPI:708) API call: VBD.set_type not found
+[2013-12-25 22:21:59 7526] WARNING (XendAPI:708) API call: session.get_all_records not found
+[2013-12-25 22:21:59 7526] WARNING (XendAPI:708) API call: event.get_record not found
+[2013-12-25 22:21:59 7526] WARNING (XendAPI:708) API call: event.get_all not found
+[2013-12-25 22:21:59 7526] WARNING (XendAPI:708) API call: VIF.set_device not found
+[2013-12-25 22:21:59 7526] WARNING (XendAPI:708) API call: VIF.set_MAC not found
+[2013-12-25 22:21:59 7526] WARNING (XendAPI:708) API call: VIF.set_MTU not found
+[2013-12-25 22:21:59 7526] WARNING (XendAPI:708) API call: debug.get_all not found
+[2013-12-25 22:21:59 7526] INFO (XMLRPCServer:161) Opening Unix domain socket XML-RPC server on /var/run/xend/xen-api.sock; authentication has been disabled for this server.
+[2013-12-25 22:21:59 7526] INFO (XMLRPCServer:161) Opening Unix domain socket XML-RPC server on /var/run/xend/xmlrpc.sock.
+[2013-12-25 22:25:14 7526] DEBUG (SrvServer:77) SrvServer.cleanup()
+[2013-12-25 22:25:14 7526] DEBUG (XMLRPCServer:251) XMLRPCServer.cleanup()
+[2013-12-25 22:25:14 7526] DEBUG (XMLRPCServer:251) XMLRPCServer.cleanup()
+[2013-12-25 22:25:14 7526] DEBUG (XendDomain:644) cleanup_domains
+[2013-12-25 22:25:14 7428] INFO (SrvDaemon:220) Xend exited with status 0.
+[2013-12-25 22:25:14 7757] INFO (SrvDaemon:332) Xend Daemon started
+[2013-12-25 22:25:14 7757] INFO (SrvDaemon:336) Xend changeset: unavailable.
+[2013-12-25 22:25:14 7757] DEBUG (tcp:96) Listening on :8002
+[2013-12-25 22:25:17 7757] DEBUG (XendNode:332) pscsi record count: 1
+[2013-12-25 22:25:17 7757] DEBUG (XendCPUPool:747) recreate_active_pools
+[2013-12-25 22:25:17 7757] DEBUG (XendDomainInfo:151) XendDomainInfo.recreate({'max_vcpu_id': 1, 'cpu_time': 262697666398L, 'ssidref': 0, 'hvm': 0, 'shutdown_reason': 255, 'dying': 0, 'online_vcpus': 2, 'domid': 0, 'paused': 0, 'crashed': 0, 'running': 1, 'maxmem_kb': 17179869180L, 'shutdown': 0, 'mem_kb': 968184L, 'blocked': 0, 'handle': [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], 'cpupool': 0, 'name': 'Domain-0'})
+[2013-12-25 22:25:17 7757] INFO (XendDomainInfo:169) Recreating domain 0, UUID 00000000-0000-0000-0000-000000000000. at /local/domain/0
+[2013-12-25 22:25:17 7757] DEBUG (XendDomain:476) Adding Domain: 0
+[2013-12-25 22:25:17 7757] DEBUG (XendDomainInfo:1882) XendDomainInfo.handleShutdownWatch
+[2013-12-25 22:25:17 7757] DEBUG (XendDomain:410) number of vcpus to use is 0
+[2013-12-25 22:25:17 7757] WARNING (XendAPI:708) API call: VBD.set_device not found
+[2013-12-25 22:25:17 7757] WARNING (XendAPI:708) API call: VBD.set_type not found
+[2013-12-25 22:25:17 7757] WARNING (XendAPI:708) API call: session.get_all_records not found
+[2013-12-25 22:25:17 7757] WARNING (XendAPI:708) API call: event.get_record not found
+[2013-12-25 22:25:17 7757] WARNING (XendAPI:708) API call: event.get_all not found
+[2013-12-25 22:25:17 7757] WARNING (XendAPI:708) API call: VIF.set_device not found
+[2013-12-25 22:25:17 7757] WARNING (XendAPI:708) API call: VIF.set_MAC not found
+[2013-12-25 22:25:17 7757] WARNING (XendAPI:708) API call: VIF.set_MTU not found
+[2013-12-25 22:25:17 7757] WARNING (XendAPI:708) API call: debug.get_all not found
+[2013-12-25 22:25:17 7757] INFO (XMLRPCServer:161) Opening Unix domain socket XML-RPC server on /var/run/xend/xen-api.sock; authentication has been disabled for this server.
+[2013-12-25 22:25:17 7757] INFO (XMLRPCServer:161) Opening Unix domain socket XML-RPC server on /var/run/xend/xmlrpc.sock.
+[2013-12-25 22:25:34 7756] CRITICAL (SrvDaemon:232) Xend died due to signal 11!  Restarting it.
+[2013-12-25 22:25:34 7853] INFO (SrvDaemon:332) Xend Daemon started
+[2013-12-25 22:25:34 7853] INFO (SrvDaemon:336) Xend changeset: unavailable.
+[2013-12-25 22:25:34 7853] DEBUG (tcp:96) Listening on :8002
+[2013-12-25 22:25:37 7853] DEBUG (XendNode:332) pscsi record count: 1
+[2013-12-25 22:25:37 7853] DEBUG (XendCPUPool:747) recreate_active_pools
+[2013-12-25 22:25:37 7853] DEBUG (XendDomainInfo:151) XendDomainInfo.recreate({'max_vcpu_id': 1, 'cpu_time': 264540310572L, 'ssidref': 0, 'hvm': 0, 'shutdown_reason': 255, 'dying': 0, 'online_vcpus': 2, 'domid': 0, 'paused': 0, 'crashed': 0, 'running': 1, 'maxmem_kb': 17179869180L, 'shutdown': 0, 'mem_kb': 968184L, 'blocked': 0, 'handle': [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], 'cpupool': 0, 'name': 'Domain-0'})
+[2013-12-25 22:25:37 7853] INFO (XendDomainInfo:169) Recreating domain 0, UUID 00000000-0000-0000-0000-000000000000. at /local/domain/0
+[2013-12-25 22:25:37 7853] DEBUG (XendDomain:476) Adding Domain: 0
+[2013-12-25 22:25:37 7853] DEBUG (XendDomain:410) number of vcpus to use is 0
+[2013-12-25 22:25:37 7853] DEBUG (XendDomainInfo:1882) XendDomainInfo.handleShutdownWatch
+[2013-12-25 22:25:37 7853] WARNING (XendAPI:708) API call: VBD.set_device not found
+[2013-12-25 22:25:37 7853] WARNING (XendAPI:708) API call: VBD.set_type not found
+[2013-12-25 22:25:37 7853] WARNING (XendAPI:708) API call: session.get_all_records not found
+[2013-12-25 22:25:37 7853] WARNING (XendAPI:708) API call: event.get_record not found
+[2013-12-25 22:25:37 7853] WARNING (XendAPI:708) API call: event.get_all not found
+[2013-12-25 22:25:37 7853] WARNING (XendAPI:708) API call: VIF.set_device not found
+[2013-12-25 22:25:37 7853] WARNING (XendAPI:708) API call: VIF.set_MAC not found
+[2013-12-25 22:25:37 7853] WARNING (XendAPI:708) API call: VIF.set_MTU not found
+[2013-12-25 22:25:37 7853] WARNING (XendAPI:708) API call: debug.get_all not found
+[2013-12-25 22:25:37 7853] INFO (XMLRPCServer:161) Opening Unix domain socket XML-RPC server on /var/run/xend/xen-api.sock; authentication has been disabled for this server.
+[2013-12-25 22:25:37 7853] INFO (XMLRPCServer:161) Opening Unix domain socket XML-RPC server on /var/run/xend/xmlrpc.sock.
+[2013-12-25 22:29:17 7853] DEBUG (SrvServer:77) SrvServer.cleanup()
+[2013-12-25 22:29:17 7853] DEBUG (XMLRPCServer:251) XMLRPCServer.cleanup()
+[2013-12-25 22:29:17 7853] DEBUG (XMLRPCServer:251) XMLRPCServer.cleanup()
+[2013-12-25 22:29:17 7853] DEBUG (XendDomain:644) cleanup_domains
+[2013-12-25 22:29:17 7756] INFO (SrvDaemon:220) Xend exited with status 0.
+[2013-12-25 22:29:17 8099] INFO (SrvDaemon:332) Xend Daemon started
+[2013-12-25 22:29:17 8099] INFO (SrvDaemon:336) Xend changeset: unavailable.
+[2013-12-25 22:29:17 8099] DEBUG (tcp:96) Listening on :8002
+[2013-12-25 22:29:20 8099] DEBUG (XendNode:332) pscsi record count: 1
+[2013-12-25 22:29:20 8099] DEBUG (XendCPUPool:747) recreate_active_pools
+[2013-12-25 22:29:20 8099] DEBUG (XendDomainInfo:151) XendDomainInfo.recreate({'max_vcpu_id': 1, 'cpu_time': 272109952816L, 'ssidref': 0, 'hvm': 0, 'shutdown_reason': 255, 'dying': 0, 'online_vcpus': 2, 'domid': 0, 'paused': 0, 'crashed': 0, 'running': 1, 'maxmem_kb': 17179869180L, 'shutdown': 0, 'mem_kb': 968184L, 'blocked': 0, 'handle': [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], 'cpupool': 0, 'name': 'Domain-0'})
+[2013-12-25 22:29:20 8099] INFO (XendDomainInfo:169) Recreating domain 0, UUID 00000000-0000-0000-0000-000000000000. at /local/domain/0
+[2013-12-25 22:29:20 8099] DEBUG (XendDomain:476) Adding Domain: 0
+[2013-12-25 22:29:20 8099] DEBUG (XendDomainInfo:1882) XendDomainInfo.handleShutdownWatch
+[2013-12-25 22:29:20 8099] DEBUG (XendDomain:410) number of vcpus to use is 0
+[2013-12-25 22:29:20 8099] WARNING (XendAPI:708) API call: VBD.set_device not found
+[2013-12-25 22:29:20 8099] WARNING (XendAPI:708) API call: VBD.set_type not found
+[2013-12-25 22:29:20 8099] WARNING (XendAPI:708) API call: session.get_all_records not found
+[2013-12-25 22:29:20 8099] WARNING (XendAPI:708) API call: event.get_record not found
+[2013-12-25 22:29:20 8099] WARNING (XendAPI:708) API call: event.get_all not found
+[2013-12-25 22:29:20 8099] WARNING (XendAPI:708) API call: VIF.set_device not found
+[2013-12-25 22:29:20 8099] WARNING (XendAPI:708) API call: VIF.set_MAC not found
+[2013-12-25 22:29:20 8099] WARNING (XendAPI:708) API call: VIF.set_MTU not found
+[2013-12-25 22:29:20 8099] WARNING (XendAPI:708) API call: debug.get_all not found
+[2013-12-25 22:29:20 8099] INFO (XMLRPCServer:161) Opening Unix domain socket XML-RPC server on /var/run/xend/xen-api.sock; authentication has been disabled for this server.
+[2013-12-25 22:29:20 8099] INFO (XMLRPCServer:161) Opening Unix domain socket XML-RPC server on /var/run/xend/xmlrpc.sock.
+[2013-12-25 22:29:36 8098] CRITICAL (SrvDaemon:232) Xend died due to signal 11!  Restarting it.
+[2013-12-25 22:29:36 8194] INFO (SrvDaemon:332) Xend Daemon started
+[2013-12-25 22:29:36 8194] INFO (SrvDaemon:336) Xend changeset: unavailable.
+[2013-12-25 22:29:36 8194] DEBUG (tcp:96) Listening on :8002
+[2013-12-25 22:29:39 8194] DEBUG (XendNode:332) pscsi record count: 1
+[2013-12-25 22:29:39 8194] DEBUG (XendCPUPool:747) recreate_active_pools
+[2013-12-25 22:29:39 8194] DEBUG (XendDomainInfo:151) XendDomainInfo.recreate({'max_vcpu_id': 1, 'cpu_time': 273893066099L, 'ssidref': 0, 'hvm': 0, 'shutdown_reason': 255, 'dying': 0, 'online_vcpus': 2, 'domid': 0, 'paused': 0, 'crashed': 0, 'running': 1, 'maxmem_kb': 17179869180L, 'shutdown': 0, 'mem_kb': 968184L, 'blocked': 0, 'handle': [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], 'cpupool': 0, 'name': 'Domain-0'})
+[2013-12-25 22:29:39 8194] INFO (XendDomainInfo:169) Recreating domain 0, UUID 00000000-0000-0000-0000-000000000000. at /local/domain/0
+[2013-12-25 22:29:39 8194] DEBUG (XendDomain:476) Adding Domain: 0
+[2013-12-25 22:29:39 8194] DEBUG (XendDomain:410) number of vcpus to use is 0
+[2013-12-25 22:29:39 8194] DEBUG (XendDomainInfo:1882) XendDomainInfo.handleShutdownWatch
+[2013-12-25 22:29:39 8194] WARNING (XendAPI:708) API call: VBD.set_device not found
+[2013-12-25 22:29:39 8194] WARNING (XendAPI:708) API call: VBD.set_type not found
+[2013-12-25 22:29:39 8194] WARNING (XendAPI:708) API call: session.get_all_records not found
+[2013-12-25 22:29:39 8194] WARNING (XendAPI:708) API call: event.get_record not found
+[2013-12-25 22:29:39 8194] WARNING (XendAPI:708) API call: event.get_all not found
+[2013-12-25 22:29:39 8194] WARNING (XendAPI:708) API call: VIF.set_device not found
+[2013-12-25 22:29:39 8194] WARNING (XendAPI:708) API call: VIF.set_MAC not found
+[2013-12-25 22:29:39 8194] WARNING (XendAPI:708) API call: VIF.set_MTU not found
+[2013-12-25 22:29:39 8194] WARNING (XendAPI:708) API call: debug.get_all not found
+[2013-12-25 22:29:39 8194] INFO (XMLRPCServer:161) Opening Unix domain socket XML-RPC server on /var/run/xend/xen-api.sock; authentication has been disabled for this server.
+[2013-12-25 22:29:39 8194] INFO (XMLRPCServer:161) Opening Unix domain socket XML-RPC server on /var/run/xend/xmlrpc.sock.
