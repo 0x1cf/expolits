@@ -22,7 +22,11 @@ vms = xendDomainObj.get_all_vms()
 print "==all vms=="
 dump(vms)
 
-print "==dom0=="
+print "==dom0.info=="
+dom0 = vms[0]
+dump(dom0.info)
+
+print "==dom0.info['vcpus_params']=="
 dom0 = vms[0]
 dump(dom0.info['vcpus_params'])
 
