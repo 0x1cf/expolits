@@ -177,3 +177,41 @@ The calloc() function allocates memory for an array of nmemb elements of size by
 1310 #define SIZE_BITS (PREV_INUSE|IS_MMAPPED|NON_MAIN_ARENA) // 0x07
 1437 #define next_chunk(p) ((mchunkptr)( ((char*)(p)) + ((p)->size & ~SIZE_BITS) ))
 1458 #define inuse_bit_at_offset(p, s) (((mchunkptr)(((char*)(p)) + (s)))->size & PREV_INUSE)
+
+
+1986 /*
+1987   Properties of inuse chunks
+1988 */
+1989
+1990 static void do_check_inuse_chunk(mstate av, mchunkptr p)
+1991 {
+1992   mchunkptr next;
+1993
+1994   do_check_chunk(av, p);
+1995
+1996   if (chunk_is_mmapped(p))
+1997     return; /* mmapped chunks have no next/prev */
+1998
+1999   /* Check whether it claims to be in use ... */
+2000   assert(inuse(p));
+2001
+2002   next = next_chunk(p);
+2003
+2004   /* ... and is surrounded by OK chunks.
+2005     Since more things can be checked with free chunks than inuse ones,
+2006     if an inuse chunk borders them and debug is on, it's worth doing them.
+2007   */
+2008   if (!prev_inuse(p))  {
+2009     /* Note that we cannot even look at prev unless it is not inuse */
+2010     mchunkptr prv = prev_chunk(p);
+2011     assert(next_chunk(prv) == p);
+2012     do_check_free_chunk(av, prv);
+2013   }
+2014
+2015   if (next == av->top) {
+2016     assert(prev_inuse(next));
+2017     assert(chunksize(next) >= MINSIZE);
+2018   }
+2019   else if (!inuse(next))
+2020     do_check_free_chunk(av, next);
+2021 }
