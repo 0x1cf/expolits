@@ -102,6 +102,17 @@
  93     return calloc(1, sz);
  94 }
 
+
+ 68 int xc_get_cpumap_size(xc_interface *xch)
+ 69 {
+ 70     int max_cpus = xc_get_max_cpus(xch);
+ 71
+ 72     if ( max_cpus < 0 )
+ 73         return -1;
+ 74     return (max_cpus + 7) / 8;
+ 75 }
+
+
 /*
 The calloc() function allocates memory for an array of nmemb elements of size bytes each and returns a pointer to the allocated memory. The memory is set to zero. If nmemb or size is 0, then calloc() returns either NULL, or a unique pointer value that can later be successfully passed to free().
 */
@@ -151,12 +162,18 @@ The calloc() function allocates memory for an array of nmemb elements of size by
 
 
 //========forward exploit free=====
-4083       /* consolidate forward */
+3856	   nextchunk = chunk_at_offset(p, size);
+3901       nextinuse = inuse_bit_at_offset(nextchunk, nextsize);
 4084       if (!nextinuse) {
 4085         unlink(nextchunk, bck, fwd);
 4086         size += nextsize;
 4087       } else
 4088         clear_inuse_bit_at_offset(nextchunk, 0);
 
+1280 #define PREV_INUSE 0x1
+1287 #define IS_MMAPPED 0x2
+1296 #define NON_MAIN_ARENA 0x4
+1313 #define chunksize(p)  ((p)->size & ~(SIZE_BITS))
+1310 #define SIZE_BITS (PREV_INUSE|IS_MMAPPED|NON_MAIN_ARENA) // 0x07
 1437 #define next_chunk(p) ((mchunkptr)( ((char*)(p)) + ((p)->size & ~SIZE_BITS) ))
 1458 #define inuse_bit_at_offset(p, s) (((mchunkptr)(((char*)(p)) + (s)))->size & PREV_INUSE)
