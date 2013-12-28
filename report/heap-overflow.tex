@@ -2,7 +2,7 @@
 \usepackage{listings}
 \usepackage{color}
 \usepackage{graphicx}
-\usepackage[noindent]{ctex}
+\usepackage[adobefonts, noindent]{ctex}
 
 \lstset{
 	language=C++,
@@ -11,14 +11,14 @@
 	%numbers=left,
 	%numbersep=6pt,
 	frame=L,
-	xleftmargin=0px,
+	xleftmargin=0pt,
 	showstringspaces=false,
 	keywordstyle=\color{blue}\ttfamily,
 	stringstyle=\color{red}\ttfamily,
 	commentstyle=\color{magenta}\ttfamily,
 	morecomment=[l][\color{magenta}]{\#}
 	tabsize=2,
-    keepspaces=true,
+   	keepspaces=true,
 }
 
 
@@ -27,9 +27,9 @@
 \makeatother
 \begin{document}
 \title{CVE-2013-2072}
-\subtitle{\textit{´ÓÒç³öµÄ½Ç¶È}}
-\author{ÕÅ·«}
-\date{\today}
+\subtitle{\textit{ä»æº¢å‡ºçš„è§’åº¦}}
+\author{å¼ å¸†}
+\date{2013-12-24}
 
 % titlepage
 \frame{\titlepage}
@@ -42,7 +42,7 @@
 \section{Heap Overflow}
 \subsection{vulnerable code}
 \begin{frame}[fragile]
-\frametitle{\kaishu Òç³öÏÖ³¡}
+\frametitle{\kaishu æº¢å‡ºç°åœº}
 
 \begin{lstlisting}[basicstyle=\footnotesize]
 225     xc_cpumap_t cpumap; 
@@ -59,14 +59,14 @@
 \end{lstlisting}
 
 \begin{enumerate}
-\item Ğ´Èë\texttt{cpumap[cpu/8]}Ê±Ã»ÓĞ¼ì²é±ß½ç
-\item \texttt{cpu}ÊÇÍâ²¿²ÎÊı£¬¿ÉÒÔÍ¨¹ı\texttt{xm vcpu-pin}´«Èë
+\item å†™å…¥\texttt{cpumap[cpu/8]}æ—¶æ²¡æœ‰æ£€æŸ¥è¾¹ç•Œ
+\item \texttt{cpu}æ˜¯å¤–éƒ¨å‚æ•°ï¼Œå¯ä»¥é€šè¿‡\texttt{xm vcpu-pin}ä¼ å…¥
 \end{enumerate}
 \end{frame}
 
 \begin{frame}[fragile]{Heap Overflow}
 
-×¼È·À´Ëµ£¬ÊÇ``¶Ñ''»º´æÒç³ö¡£
+å‡†ç¡®æ¥è¯´ï¼Œæ˜¯``å †''ç¼“å­˜æº¢å‡ºã€‚
 
 \begin{lstlisting}
 354 typedef uint8_t *xc_cpumap_t; // cpumap ~ uint8_t *
@@ -79,12 +79,12 @@
  93     return calloc(1, sz); // allocate mem from heap
  94 }
 \end{lstlisting}
-cpumapÊÇ¶ÑÖĞµÄbuffer£¬´óĞ¡Îªsz¡£cpumap¼´Îª\texttt{uint8\_t *}¡£
+cpumapæ˜¯å †ä¸­çš„bufferï¼Œå¤§å°ä¸ºszã€‚cpumapå³ä¸º\texttt{uint8\_t *}ã€‚
 \end{frame}
 
 \subsection{capability}
 \begin{frame}[fragile]
-\frametitle{\kaishu ÄÜ×öÊ²Ã´}
+\frametitle{\kaishu èƒ½åšä»€ä¹ˆ}
 \begin{lstlisting}
 long cpu = cpulist[i];
 //cpumap[cpu / 8] |= 1 << (cpu % 8);
@@ -92,14 +92,14 @@ long cpu = cpulist[i];
 \end{lstlisting}
 
 
-Êµ¼ÊÉÏ£¬ÉÏÃæµÄ¸³Öµ½«\texttt{cpumap}Ö®ºóµÄ\textbf{µÚcpu¸öbitÖÃÎª1}¡£
+å®é™…ä¸Šï¼Œä¸Šé¢çš„èµ‹å€¼å°†\texttt{cpumap}ä¹‹åçš„\textbf{ç¬¬cpuä¸ªbitç½®ä¸º1}ã€‚
 
-Òò´Ë£¬Í¨¹ı²Ù×İcpu£¬¿ÉÒÔÈÎÒâĞŞ¸Äcpumap£¨¶ÑÖĞ£©¡£
+å› æ­¤ï¼Œé€šè¿‡æ“çºµcpuï¼Œå¯ä»¥ä»»æ„ä¿®æ”¹cpumapï¼ˆå †ä¸­ï¼‰ã€‚
 \end{frame}
 
 \subsection{DOS}
 \begin{frame}[fragile]
-\frametitle{\kaishu ÊµÏÖÁËDOS}
+\frametitle{\kaishu å®ç°äº†DOS}
 \begin{verbatim}
 > xm vcpu-pin 0 0 999999
 \end{verbatim}
@@ -126,24 +126,24 @@ Dec 25 22:29:36 xen py_xc[8099]: setting cpumap (0x7f1530025147.7), vcpu=0
 \begin{frame}[fragile]
 \frametitle{Heap implementation}
 \begin{description}
-\item[Ê²Ã´ÊÇ¶Ñ]
+\item[ä»€ä¹ˆæ˜¯å †]
 \begin{itemize}
-\item ¶ÑÊÇ¿É¹©³ÌĞòÔËĞĞÊ±ÉêÇëµÄÄÚ´æ¿Õ¼ä
-\item ¶ÑµÄ´æÔÚ²»ÊÜÏŞÓÚº¯ÊıµÄexecuting scope(²»Í¬ÓÚstack)
+\item å †æ˜¯å¯ä¾›ç¨‹åºè¿è¡Œæ—¶ç”³è¯·çš„å†…å­˜ç©ºé—´
+\item å †çš„å­˜åœ¨ä¸å—é™äºå‡½æ•°çš„executing scope(ä¸åŒäºstack)
 \end{itemize}
-\item[¶ÑµÄÊµÏÖ]
+\item[å †çš„å®ç°]
 \begin{itemize}
-  \item ¶ÑÔÚµØÖ·µÍ¶Î£¬Ïò¸ßµØÖ·Ôö³¤
-  \item LinuxÖĞµÄ¶ÑÊµÏÖ(\texttt{calloc(), free()})ÊÇ\texttt{glibc}µÄÒ»²¿·Ö
+  \item å †åœ¨åœ°å€ä½æ®µï¼Œå‘é«˜åœ°å€å¢é•¿
+  \item Linuxä¸­çš„å †å®ç°(\texttt{calloc(), free()})æ˜¯\texttt{glibc}çš„ä¸€éƒ¨åˆ†
 \end{itemize}
 \end{description}
-\textbf{¶ÑÒç³ö}ÊÇ·Ç³£³£¼ûµÄ°²È«Â©¶´£¬ÎªÁËÀûÓÃheap overflow£¬ĞèÒªÁË½â¶Ñ¡£
+\textbf{å †æº¢å‡º}æ˜¯éå¸¸å¸¸è§çš„å®‰å…¨æ¼æ´ï¼Œä¸ºäº†åˆ©ç”¨heap overflowï¼Œéœ€è¦äº†è§£å †ã€‚
 \end{frame}
 
 \subsection{struct -- chunk}
-\begin{frame}[fragile]{\kaishu ¶ÑµÄ½á¹¹}{\fangsong chunkÊı¾İ½á¹¹}
+\begin{frame}[fragile]{\kaishu å †çš„ç»“æ„}{\fangsong chunkæ•°æ®ç»“æ„}
 
-¶ÑÊÇÒ»Õû¿éÁ¬ĞøµÄÄÚ´æ£¬ÓÉÈô¸Échunk×é³É¡£Allocated chunkµÄÊı¾İ½á¹¹ÈçÏÂ¡£
+å †æ˜¯ä¸€æ•´å—è¿ç»­çš„å†…å­˜ï¼Œç”±è‹¥å¹²chunkç»„æˆã€‚Allocated chunkçš„æ•°æ®ç»“æ„å¦‚ä¸‹ã€‚
 {\scriptsize
 \begin{verbatim}
     chunk-> +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
@@ -160,7 +160,7 @@ nextchunk-> +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 \end{frame}
 
 \begin{frame}[fragile]
-\frametitle{\kaishu free chuck×é³ÉË«ÏòÁ´±í}
+\frametitle{\kaishu free chuckç»„æˆåŒå‘é“¾è¡¨}
 \begin{lstlisting}[basicstyle=\scriptsize]
 struct malloc_chunk {
   INTERNAL_SIZE_T      prev_size;  /* Size of previous chunk (if free).  */
@@ -175,14 +175,14 @@ struct malloc_chunk {
 };
 \end{lstlisting}
 
-Ë«ÏòÁ´±íµÄ²Ù×÷¿ÉÒÔ±»ÀûÓÃ¡£
+åŒå‘é“¾è¡¨çš„æ“ä½œå¯ä»¥è¢«åˆ©ç”¨ã€‚
 
 \end{frame}
 
 \subsection{ops -- traversal}
 \begin{frame}[fragile]
-\frametitle{\kaishu ¶ÑµÄ±éÀú}
-¶ÑÒç³ö¿ÉÀûÓÃµÄ¸ùÔ´ÔÚ\textbf{»ùÓÚ``size''µÄ±éÀú²Ù×÷}£¬±ÈÈç£º
+\frametitle{\kaishu å †çš„éå†}
+å †æº¢å‡ºå¯åˆ©ç”¨çš„æ ¹æºåœ¨\textbf{åŸºäº``size''çš„éå†æ“ä½œ}ï¼Œæ¯”å¦‚ï¼š
 \begin{lstlisting}
 // get chunk at offset
 1323 #define chunk_at_offset(p, s) \
@@ -195,8 +195,8 @@ struct malloc_chunk {
 
 \subsection{overflow -- overwrite metadata}
 \begin{frame}
-\frametitle{\kaishu ÎªÊ²Ã´Òç³ö¿ÉÒÔ±»ÀûÓÃ}
-¸²¸Çmetadata(ÌØ±ğÊÇprev-size, size)¿ÉÒÔ¿ØÖÆ¶Ñ±éÀúµÄ´ÎĞò¡£
+\frametitle{\kaishu ä¸ºä»€ä¹ˆæº¢å‡ºå¯ä»¥è¢«åˆ©ç”¨}
+è¦†ç›–metadata(ç‰¹åˆ«æ˜¯prev-size, size)å¯ä»¥æ§åˆ¶å †éå†çš„æ¬¡åºã€‚
 \begin{figure}
 \centering
 \begin{tabular}{|c|}
@@ -215,18 +215,18 @@ struct malloc_chunk {
 \section{Exploiting free()}
 \begin{frame}[fragile]
 \frametitle{free(void *p)}
-\texttt{free(void* P)}µÄ¹ı³Ì
+\texttt{free(void* P)}çš„è¿‡ç¨‹
 \begin{enumerate}
-  \item °²È«ĞÔ¼ì²é(*)
-  \item ±ê¼Ç\texttt{P->malloc\_chunk}ÖĞµÄÎ»
-  \item ½«ÏàÁÚµÄfree chunksºÏ²¢£¨Ë«ÏòÁ´±íµÄÉ¾³ı£©(**)
+  \item å®‰å…¨æ€§æ£€æŸ¥(*)
+  \item æ ‡è®°\texttt{P->malloc\_chunk}ä¸­çš„ä½
+  \item å°†ç›¸é‚»çš„free chunksåˆå¹¶ï¼ˆåŒå‘é“¾è¡¨çš„åˆ é™¤ï¼‰(**)
 \end{enumerate}
-ºÏ²¢·ÖÁ½ÖÖ£ºÇ°Ïò¡¢ºóÏò¡£·Ö±ğ¿ÉÒÔÀûÓÃ¡£
+åˆå¹¶åˆ†ä¸¤ç§ï¼šå‰å‘ã€åå‘ã€‚åˆ†åˆ«å¯ä»¥åˆ©ç”¨ã€‚
 \end{frame}
 
 \subsection{forward consolidate}
 \begin{frame}[fragile]
-\frametitle{\kaishu Ç°ÏòºÏ²¢}
+\frametitle{\kaishu å‰å‘åˆå¹¶}
 \begin{lstlisting}
 _int_free(mstate av, mchunkptr p, int have_lock)
 3892     if (!prev_inuse(p)) {      /* (1) */
@@ -237,16 +237,16 @@ _int_free(mstate av, mchunkptr p, int have_lock)
 3897     }
 \end{lstlisting}
 \begin{enumerate}
-  \item ¼ì²éÇ°Ò»¸öchunkÊÇ·ñfree
-  \item µÃµ½Ç°Ò»¸öchunkµÄsize
-  \item ½«Ö¸ÕëÇ°ÒÆprev\_size
-  \item ´ÓË«ÏòÁ´±íÖĞÉ¾³ı
+  \item æ£€æŸ¥å‰ä¸€ä¸ªchunkæ˜¯å¦free
+  \item å¾—åˆ°å‰ä¸€ä¸ªchunkçš„size
+  \item å°†æŒ‡é’ˆå‰ç§»prev\_size
+  \item ä»åŒå‘é“¾è¡¨ä¸­åˆ é™¤
 \end{enumerate}
 \end{frame}
 
 \begin{frame}[fragile]
-\frametitle{\kaishu ÀûÓÃË«ÏòÁ´±íµÄÉ¾³ı}
-ÎÒÃÇ¿ÉÒÔÍ¨¹ıÒç³ö½«prev\_size¸²¸Ç£¬´Ó¶ø½«pÖ¸ÏòÎÒÃÇÏëÒªµÄµØ·½¡£¶øÖ®ºóµÄË«ÏòÁ´±íÉ¾³ı£¬¿ÉÒÔÀûÓÃpÊµÏÖ¶ÔÈÎÒâÄÚ´æµÄĞŞ¸Ä¡£
+\frametitle{\kaishu åˆ©ç”¨åŒå‘é“¾è¡¨çš„åˆ é™¤}
+æˆ‘ä»¬å¯ä»¥é€šè¿‡æº¢å‡ºå°†prev\_sizeè¦†ç›–ï¼Œä»è€Œå°†pæŒ‡å‘æˆ‘ä»¬æƒ³è¦çš„åœ°æ–¹ã€‚è€Œä¹‹åçš„åŒå‘é“¾è¡¨åˆ é™¤ï¼Œå¯ä»¥åˆ©ç”¨på®ç°å¯¹ä»»æ„å†…å­˜çš„ä¿®æ”¹ã€‚
 \begin{lstlisting}
 1424 #define unlink(P, BK, FD) {
 1425   FD = P->fd;   \    // FD = A
@@ -256,14 +256,14 @@ _int_free(mstate av, mchunkptr p, int have_lock)
 1451 }
 \end{lstlisting}
 
-×ÜÖ®£¬Ñ¡È¡Á½¸öºÏ·¨µØÖ·A,B£¬¿ÉÒÔÊµÏÖÈÎÒâ¸³Öµ
+æ€»ä¹‹ï¼Œé€‰å–ä¸¤ä¸ªåˆæ³•åœ°å€A,Bï¼Œå¯ä»¥å®ç°ä»»æ„èµ‹å€¼
 
 \texttt{*(A+12) = B;*(B+8) = A;}
 \end{frame}
 
 \subsection{backward consolidate}
 \begin{frame}[fragile]
-\frametitle{\kaishu ÀûÓÃºóÏòºÏ²¢}
+\frametitle{\kaishu åˆ©ç”¨åå‘åˆå¹¶}
 
 \begin{lstlisting}
 3856    nextchunk = chunk_at_offset(p, size); // 1
@@ -275,29 +275,29 @@ _int_free(mstate av, mchunkptr p, int have_lock)
 4088        clear_inuse_bit_at_offset(nextchunk, 0);
 \end{lstlisting}
 \begin{enumerate}
-  \item µÃµ½ÏÂÒ»¸öchunkµÄÖ¸Õë
-  \item ÅĞ¶ÏÏÂÒ»¸öchunkÊÇ·ñfree
-  \item Ë«ÏòÁ´±íÉ¾³ı
+  \item å¾—åˆ°ä¸‹ä¸€ä¸ªchunkçš„æŒ‡é’ˆ
+  \item åˆ¤æ–­ä¸‹ä¸€ä¸ªchunkæ˜¯å¦free
+  \item åŒå‘é“¾è¡¨åˆ é™¤
 \end{enumerate}
 \end{frame}
 
 \section{Exploiting}
 \begin{frame}[fragile]
-\frametitle{\kaishu Çé¿ö}
+\frametitle{\kaishu æƒ…å†µ}
 \begin{itemize}
-  \item ÄÜÀûÓÃµÄÖ»ÓĞÒ»¸öchunk(cpumap)£¬ºÜÄÑÔÙcallocÒ»¸ö
-  \item µ«ÊÇsize¿ÉÒÔµ÷Õû(max\_vcpu)
-  \item free(cpumap)Ò²²»ÄÜ±ä
+  \item èƒ½åˆ©ç”¨çš„åªæœ‰ä¸€ä¸ªchunk(cpumap)ï¼Œå¾ˆéš¾å†callocä¸€ä¸ª
+  \item ä½†æ˜¯sizeå¯ä»¥è°ƒæ•´(max\_vcpu)
+  \item free(cpumap)ä¹Ÿä¸èƒ½å˜
 \end{itemize}
 
-Òò´ËÀûÓÃÇ°ÏòºÏ²¢±È½ÏÀ§ÄÑ£¬Ö»ÄÜÀûÓÃºóÏòºÏ²¢¡£
+å› æ­¤åˆ©ç”¨å‰å‘åˆå¹¶æ¯”è¾ƒå›°éš¾ï¼Œåªèƒ½åˆ©ç”¨åå‘åˆå¹¶ã€‚
 
 \end{frame}
 
-\begin{frame}[fragile]{\kaishu ¹¹Ôìchunk£¬ÀûÓÃºóÏòºÏ²¢}
+\begin{frame}[fragile]{\kaishu æ„é€ chunkï¼Œåˆ©ç”¨åå‘åˆå¹¶}
 \begin{itemize}
-  \item ¹¹Ôì2¸ö¶îÍâµÄchunk
-  \item µ÷ÓÃfree(cpumap)£¬³ö·¢ºóÏòºÏ²¢
+  \item æ„é€ 2ä¸ªé¢å¤–çš„chunk
+  \item è°ƒç”¨free(cpumap)ï¼Œå‡ºå‘åå‘åˆå¹¶
 \end{itemize}
 \begin{lstlisting}
 //sizeof(size_t) == 8
@@ -312,7 +312,7 @@ _int_free(mstate av, mchunkptr p, int have_lock)
              cpumap  next_chunk
 \end{verbatim}}
 \begin{itemize}
-  \item Ä¿Ç°ÕıÔÚ¿´\texttt{\_int\_free(..)}Ô´Âë£¬ÑĞ¾¿ÈçºÎÈÆ¹ı°²È«¼ì²é¡£
+  \item ç›®å‰æ­£åœ¨çœ‹\texttt{\_int\_free(..)}æºç ï¼Œç ”ç©¶å¦‚ä½•ç»•è¿‡å®‰å…¨æ£€æŸ¥ã€‚
 \end{itemize}
 \end{frame}
 
