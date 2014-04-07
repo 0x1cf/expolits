@@ -1,1 +1,0 @@
-scripts/get_log.sh
