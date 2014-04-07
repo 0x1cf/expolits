@@ -1,0 +1,1364 @@
+From: Henry <zhangzhi2022@gmail.com>
+Date: Sun Aug 1 15:11:14 2010 
+Subject: [PATCH] kvm patch
+
+diff --git a/Makefile.target b/Makefile.target
+index 86b6f04..34391c3 100644
+--- a/Makefile.target
++++ b/Makefile.target
+@@ -227,6 +227,7 @@ obj-i386-y += testdev.o
+ 
+ obj-i386-$(CONFIG_KVM_PIT) += i8254-kvm.o
+ obj-i386-$(CONFIG_KVM_DEVICE_ASSIGNMENT) += device-assignment.o
++obj-i386-$(CONFIG_KVM_DEVICE_ASSIGNMENT) += intel_iommu.o
+ 
+ # Hardware support
+ obj-ia64-y += ide.o pckbd.o vga.o $(SOUND_HW) dma.o $(AUDIODRV)
+diff --git a/block.c b/block.c
+index 30ae2b1..3f3496e 100644
+--- a/block.c
++++ b/block.c
+@@ -396,8 +396,8 @@ int bdrv_open2(BlockDriverState *bs, const char *filename, int flags,
+         if (is_protocol)
+             snprintf(backing_filename, sizeof(backing_filename),
+                      "%s", filename);
+-        else if (!realpath(filename, backing_filename))
+-            return -errno;
++        else
++            realpath(filename, backing_filename);
+ 
+         bdrv_qcow2 = bdrv_find_format("qcow2");
+         options = parse_option_parameters("", bdrv_qcow2->create_options, NULL);
+diff --git a/cpu-common.h b/cpu-common.h
+index 5e59564..70b64f2 100644
+--- a/cpu-common.h
++++ b/cpu-common.h
+@@ -42,8 +42,14 @@ int cpu_register_io_memory(CPUReadMemoryFunc * const *mem_read,
+                            void *opaque);
+ void cpu_unregister_io_memory(int table_address);
+ 
+-void cpu_physical_memory_rw(target_phys_addr_t addr, uint8_t *buf,
+-                            int len, int is_write);
++void cpu_physical_memory_rw_gen(target_phys_addr_t addr, uint8_t *buf,
++                            int len, int is_write, int devfn, int* err);
++						
++static inline void cpu_physical_memory_rw(target_phys_addr_t addr, uint8_t *buf,
++                            int len, int is_write)
++{
++	cpu_physical_memory_rw_gen(addr, buf, len, is_write, -1, NULL);
++}							
+ static inline void cpu_physical_memory_read(target_phys_addr_t addr,
+                                             uint8_t *buf, int len)
+ {
+@@ -54,9 +60,21 @@ static inline void cpu_physical_memory_write(target_phys_addr_t addr,
+ {
+     cpu_physical_memory_rw(addr, (uint8_t *)buf, len, 1);
+ }
+-void *cpu_physical_memory_map(target_phys_addr_t addr,
++
++static void *cpu_physical_memory_map(target_phys_addr_t addr,
+                               target_phys_addr_t *plen,
+                               int is_write);
++							  
++void *cpu_physical_memory_map_gen(target_phys_addr_t addr,
++                              target_phys_addr_t *plen,
++                              int is_write, int devfn, int* err);
++
++inline void *cpu_physical_memory_map(target_phys_addr_t addr,
++                              target_phys_addr_t *plen,
++                              int is_write)
++{
++	return cpu_physical_memory_map_gen(addr, plen, is_write, -1, NULL);
++}
+ void cpu_physical_memory_unmap(void *buffer, target_phys_addr_t len,
+                                int is_write, target_phys_addr_t access_len);
+ void *cpu_register_map_client(void *opaque, void (*callback)(void *opaque));
+@@ -88,4 +106,36 @@ void cpu_physical_memory_write_rom(target_phys_addr_t addr,
+ #define IO_MEM_SUBPAGE     (2)
+ #define IO_MEM_SUBWIDTH    (4)
+ 
++/* IOMMU related */
++static inline void *cpu_physical_memory_map_io(target_phys_addr_t addr,
++                              target_phys_addr_t *plen,
++                              int is_write, int devfn, int* err)
++{
++	return cpu_physical_memory_map_gen(addr, plen, is_write, devfn, err);
++}							  
++
++static inline void cpu_physical_memory_rw_io(target_phys_addr_t addr, uint8_t *buf,
++                            int len, int is_write, int devfn, int* err)
++{
++	cpu_physical_memory_rw_gen(addr, buf, len, is_write, devfn, err);
++}
++
++static inline void cpu_physical_memory_read_io(target_phys_addr_t addr,
++                                            uint8_t *buf, int len, int devfn, int* err)
++{
++    cpu_physical_memory_rw_io(addr, buf, len, 0, devfn, err);
++}
++
++static inline void cpu_physical_memory_write_io(target_phys_addr_t addr,
++                                             const uint8_t *buf, int len, 
++											 int devfn, int* err)
++{
++    cpu_physical_memory_rw_io(addr, (uint8_t *)buf, len, 1, devfn, err);
++}
++
++void cpu_physical_memory_rw_log(target_phys_addr_t addr, uint8_t *buf,
++                            int len, int is_write);
++
++
+ #endif /* !CPU_COMMON_H */
++
+diff --git a/dma-helpers.c b/dma-helpers.c
+index d4fc077..8d2078c 100644
+--- a/dma-helpers.c
++++ b/dma-helpers.c
+@@ -47,6 +47,7 @@ typedef struct {
+     target_phys_addr_t sg_cur_byte;
+     QEMUIOVector iov;
+     QEMUBH *bh;
++    uint16_t busdevfn;
+ } DMAAIOCB;
+ 
+ static void dma_bdrv_cb(void *opaque, int ret);
+@@ -84,6 +85,7 @@ static void dma_bdrv_cb(void *opaque, int ret)
+     DMAAIOCB *dbs = (DMAAIOCB *)opaque;
+     target_phys_addr_t cur_addr, cur_len;
+     void *mem;
++    int err;
+ 
+     dbs->acb = NULL;
+     dbs->sector_num += dbs->iov.size / 512;
+@@ -100,8 +102,9 @@ static void dma_bdrv_cb(void *opaque, int ret)
+     while (dbs->sg_cur_index < dbs->sg->nsg) {
+         cur_addr = dbs->sg->sg[dbs->sg_cur_index].base + dbs->sg_cur_byte;
+         cur_len = dbs->sg->sg[dbs->sg_cur_index].len - dbs->sg_cur_byte;
+-        mem = cpu_physical_memory_map(cur_addr, &cur_len, !dbs->is_write);
+-        if (!mem)
++        mem = cpu_physical_memory_map_io(cur_addr, &cur_len, !dbs->is_write,
++		dbs->busdevfn, &err);
++        if (!mem || err)
+             break;
+         qemu_iovec_add(&dbs->iov, mem, cur_len);
+         dbs->sg_cur_byte += cur_len;
+@@ -147,7 +150,7 @@ static AIOPool dma_aio_pool = {
+ static BlockDriverAIOCB *dma_bdrv_io(
+     BlockDriverState *bs, QEMUSGList *sg, uint64_t sector_num,
+     BlockDriverCompletionFunc *cb, void *opaque,
+-    int is_write)
++    int is_write, int busdevfn)
+ {
+     DMAAIOCB *dbs =  qemu_aio_get(&dma_aio_pool, bs, cb, opaque);
+ 
+@@ -159,6 +162,7 @@ static BlockDriverAIOCB *dma_bdrv_io(
+     dbs->sg_cur_byte = 0;
+     dbs->is_write = is_write;
+     dbs->bh = NULL;
++    dbs->busdevfn = busdevfn;
+     qemu_iovec_init(&dbs->iov, sg->nsg);
+     /*
+      * DMA flushing is handled in dma_bdrv_cb() calling dma_bdrv_unmap()
+@@ -175,14 +179,16 @@ static BlockDriverAIOCB *dma_bdrv_io(
+ 
+ BlockDriverAIOCB *dma_bdrv_read(BlockDriverState *bs,
+                                 QEMUSGList *sg, uint64_t sector,
+-                                void (*cb)(void *opaque, int ret), void *opaque)
++                                void (*cb)(void *opaque, int ret), void *opaque,
++				uint16_t busdevfn)
+ {
+-    return dma_bdrv_io(bs, sg, sector, cb, opaque, 0);
++    return dma_bdrv_io(bs, sg, sector, cb, opaque, 0, busdevfn);
+ }
+ 
+ BlockDriverAIOCB *dma_bdrv_write(BlockDriverState *bs,
+                                  QEMUSGList *sg, uint64_t sector,
+-                                 void (*cb)(void *opaque, int ret), void *opaque)
++                                 void (*cb)(void *opaque, int ret), void *opaque,
++				uint16_t busdevfn)
+ {
+-    return dma_bdrv_io(bs, sg, sector, cb, opaque, 1);
++    return dma_bdrv_io(bs, sg, sector, cb, opaque, 1, busdevfn);
+ }
+diff --git a/dma.h b/dma.h
+index f3bb275..8a1427f 100644
+--- a/dma.h
++++ b/dma.h
+@@ -34,8 +34,10 @@ void qemu_sglist_destroy(QEMUSGList *qsg);
+ 
+ BlockDriverAIOCB *dma_bdrv_read(BlockDriverState *bs,
+                                 QEMUSGList *sg, uint64_t sector,
+-                                BlockDriverCompletionFunc *cb, void *opaque);
++                                BlockDriverCompletionFunc *cb, void *opaque,
++				uint16_t busdevfn);
+ BlockDriverAIOCB *dma_bdrv_write(BlockDriverState *bs,
+                                  QEMUSGList *sg, uint64_t sector,
+-                                 BlockDriverCompletionFunc *cb, void *opaque);
++                                 BlockDriverCompletionFunc *cb, void *opaque,
++				uint16_t busdevfn);
+ #endif
+diff --git a/exec.c b/exec.c
+index 99e88e1..4a044c1 100644
+--- a/exec.c
++++ b/exec.c
+@@ -42,6 +42,7 @@
+ #include "qemu-kvm.h"
+ 
+ #include "hw/hw.h"
++#include "hw/intel_iommu.h"
+ #include "osdep.h"
+ #include "kvm.h"
+ #if defined(CONFIG_USER_ONLY)
+@@ -3132,7 +3133,7 @@ static void io_mem_init(void)
+ 
+ /* physical memory access (slow version, mainly for debug) */
+ #if defined(CONFIG_USER_ONLY)
+-void cpu_physical_memory_rw(target_phys_addr_t addr, uint8_t *buf,
++void cpu_physical_memory_rw_gen(target_phys_addr_t addr, uint8_t *buf,
+                             int len, int is_write)
+ {
+     int l, flags;
+@@ -3173,8 +3174,8 @@ void cpu_physical_memory_rw(target_phys_addr_t addr, uint8_t *buf,
+ }
+ 
+ #else
+-void cpu_physical_memory_rw(target_phys_addr_t addr, uint8_t *buf,
+-                            int len, int is_write)
++void cpu_physical_memory_rw_gen(target_phys_addr_t addr, uint8_t *buf,
++                            int len, int is_write, int devfn, int* err)
+ {
+     int l, io_index;
+     uint8_t *ptr;
+@@ -3182,10 +3183,26 @@ void cpu_physical_memory_rw(target_phys_addr_t addr, uint8_t *buf,
+     target_phys_addr_t page;
+     unsigned long pd;
+     PhysPageDesc *p;
++        target_phys_addr_t addr0;
++    int single_err;
++    int temp;
++    if (err == NULL)
++	err = &temp;
++    *err = 0;
+ 
+     while (len > 0) {
+-        page = addr & TARGET_PAGE_MASK;
+-        l = (page + TARGET_PAGE_SIZE) - addr;
++			single_err = 0;
++		/* Additional translation for the case of iommu remapping */
++		addr0 = addr;
++		if (devfn != -1) {
++			*err = 0;
++			addr0 = iommu_phy_addr_translate(addr, is_write, devfn, &single_err);
++			*err |= single_err;
++			if (single_err)
++				continue;
++		}
++        page = addr0 & TARGET_PAGE_MASK;
++        l = (page + TARGET_PAGE_SIZE) - addr0;
+         if (l > len)
+             l = len;
+         p = phys_page_find(page >> TARGET_PAGE_BITS);
+@@ -3197,10 +3214,10 @@ void cpu_physical_memory_rw(target_phys_addr_t addr, uint8_t *buf,
+ 
+         if (is_write) {
+             if ((pd & ~TARGET_PAGE_MASK) != IO_MEM_RAM) {
+-                target_phys_addr_t addr1 = addr;
++                target_phys_addr_t addr1 = addr0;
+                 io_index = (pd >> IO_MEM_SHIFT) & (IO_MEM_NB_ENTRIES - 1);
+                 if (p)
+-                    addr1 = (addr & ~TARGET_PAGE_MASK) + p->region_offset;
++                    addr1 = (addr0 & ~TARGET_PAGE_MASK) + p->region_offset;
+                 /* XXX: could force cpu_single_env to NULL to avoid
+                    potential bugs */
+                 if (l >= 4 && ((addr1 & 3) == 0)) {
+@@ -3221,7 +3238,7 @@ void cpu_physical_memory_rw(target_phys_addr_t addr, uint8_t *buf,
+                 }
+             } else {
+                 unsigned long addr1;
+-                addr1 = (pd & TARGET_PAGE_MASK) + (addr & ~TARGET_PAGE_MASK);
++                addr1 = (pd & TARGET_PAGE_MASK) + (addr0 & ~TARGET_PAGE_MASK);
+                 /* RAM case */
+                 ptr = qemu_get_ram_ptr(addr1);
+                 memcpy(ptr, buf, l);
+@@ -3241,7 +3258,7 @@ void cpu_physical_memory_rw(target_phys_addr_t addr, uint8_t *buf,
+         } else {
+             if ((pd & ~TARGET_PAGE_MASK) > IO_MEM_ROM &&
+                 !(pd & IO_MEM_ROMD)) {
+-                target_phys_addr_t addr1 = addr;
++                target_phys_addr_t addr1 = addr0;
+                 /* I/O case */
+                 io_index = (pd >> IO_MEM_SHIFT) & (IO_MEM_NB_ENTRIES - 1);
+                 if (p)
+@@ -3265,7 +3282,7 @@ void cpu_physical_memory_rw(target_phys_addr_t addr, uint8_t *buf,
+             } else {
+                 /* RAM case */
+                 ptr = qemu_get_ram_ptr(pd & TARGET_PAGE_MASK) +
+-                    (addr & ~TARGET_PAGE_MASK);
++                    (addr0 & ~TARGET_PAGE_MASK);
+                 memcpy(buf, ptr, l);
+             }
+         }
+@@ -3367,9 +3384,9 @@ static void cpu_notify_map_clients(void)
+  * Use cpu_register_map_client() to know when retrying the map operation is
+  * likely to succeed.
+  */
+-void *cpu_physical_memory_map(target_phys_addr_t addr,
++void *cpu_physical_memory_map_gen(target_phys_addr_t addr,
+                               target_phys_addr_t *plen,
+-                              int is_write)
++                              int is_write, int devfn, int* err)
+ {
+     target_phys_addr_t len = *plen;
+     target_phys_addr_t done = 0;
+@@ -3380,10 +3397,14 @@ void *cpu_physical_memory_map(target_phys_addr_t addr,
+     unsigned long pd;
+     PhysPageDesc *p;
+     unsigned long addr1;
++    target_phys_addr_t addr0 = addr;
+ 
+     while (len > 0) {
+-        page = addr & TARGET_PAGE_MASK;
+-        l = (page + TARGET_PAGE_SIZE) - addr;
++	addr0 = addr;
++	if (devfn != -1)
++		addr0 = iommu_phy_addr_translate(addr, is_write, devfn, err);
++        page = addr0 & TARGET_PAGE_MASK;
++        l = (page + TARGET_PAGE_SIZE) - addr0;
+         if (l > len)
+             l = len;
+         p = phys_page_find(page >> TARGET_PAGE_BITS);
+@@ -3398,14 +3419,14 @@ void *cpu_physical_memory_map(target_phys_addr_t addr,
+                 break;
+             }
+             bounce.buffer = qemu_memalign(TARGET_PAGE_SIZE, TARGET_PAGE_SIZE);
+-            bounce.addr = addr;
++            bounce.addr = addr0;
+             bounce.len = l;
+             if (!is_write) {
+-                cpu_physical_memory_rw(addr, bounce.buffer, l, 0);
++                cpu_physical_memory_rw(addr0, bounce.buffer, l, 0);
+             }
+             ptr = bounce.buffer;
+         } else {
+-            addr1 = (pd & TARGET_PAGE_MASK) + (addr & ~TARGET_PAGE_MASK);
++            addr1 = (pd & TARGET_PAGE_MASK) + (addr0 & ~TARGET_PAGE_MASK);
+             ptr = qemu_get_ram_ptr(addr1);
+         }
+         if (!done) {
+@@ -3845,3 +3866,116 @@ void dump_exec_info(FILE *f,
+ #undef env
+ 
+ #endif
++
++
++void cpu_physical_memory_rw_log(target_phys_addr_t addr, uint8_t *buf,
++                            int len, int is_write)
++{
++    int l, io_index;
++    uint8_t *ptr;
++    uint32_t val;
++    target_phys_addr_t page;
++    unsigned long pd;
++    PhysPageDesc *p;
++        target_phys_addr_t addr0;
++    int single_err;
++
++    while (len > 0) {
++			single_err = 0;
++		/* Additional translation for the case of iommu remapping */
++		addr0 = addr;
++        page = addr0 & TARGET_PAGE_MASK;
++        l = (page + TARGET_PAGE_SIZE) - addr0;
++        if (l > len)
++            l = len;
++        p = phys_page_find(page >> TARGET_PAGE_BITS);
++        if (!p) {
++            pd = IO_MEM_UNASSIGNED;
++        } else {
++            pd = p->phys_offset;
++        }
++
++	fprintf(stderr, "pd = %lx", pd); fflush(stderr);
++        if (is_write) {
++            if ((pd & ~TARGET_PAGE_MASK) != IO_MEM_RAM) {
++                target_phys_addr_t addr1 = addr0;
++                io_index = (pd >> IO_MEM_SHIFT) & (IO_MEM_NB_ENTRIES - 1);
++                if (p)
++                    addr1 = (addr0 & ~TARGET_PAGE_MASK) + p->region_offset;
++                /* XXX: could force cpu_single_env to NULL to avoid
++                   potential bugs */
++                if (l >= 4 && ((addr1 & 3) == 0)) {
++                    /* 32 bit write access */
++                    val = ldl_p(buf);
++                    io_mem_write[io_index][2](io_mem_opaque[io_index], addr1, val);
++                    l = 4;
++                } else if (l >= 2 && ((addr1 & 1) == 0)) {
++                    /* 16 bit write access */
++                    val = lduw_p(buf);
++                    io_mem_write[io_index][1](io_mem_opaque[io_index], addr1, val);
++                    l = 2;
++                } else {
++                    /* 8 bit write access */
++                    val = ldub_p(buf);
++                    io_mem_write[io_index][0](io_mem_opaque[io_index], addr1, val);
++                    l = 1;
++                }
++            } else {
++                unsigned long addr1;
++                addr1 = (pd & TARGET_PAGE_MASK) + (addr0 & ~TARGET_PAGE_MASK);
++                /* RAM case */
++                ptr = qemu_get_ram_ptr(addr1);
++                memcpy(ptr, buf, l);
++                if (!cpu_physical_memory_is_dirty(addr1)) {
++                    /* invalidate code */
++                    tb_invalidate_phys_page_range(addr1, addr1 + l, 0);
++                    /* set dirty bit */
++                    phys_ram_dirty[addr1 >> TARGET_PAGE_BITS] |=
++                        (0xff & ~CODE_DIRTY_FLAG);
++                }
++		/* qemu doesn't execute guest code directly, but kvm does
++		   therefore flush instruction caches */
++		if (kvm_enabled())
++		    flush_icache_range((unsigned long)ptr,
++				       ((unsigned long)ptr)+l);
++            }
++        } else {
++            if ((pd & ~TARGET_PAGE_MASK) > IO_MEM_ROM &&
++                !(pd & IO_MEM_ROMD)) {
++                target_phys_addr_t addr1 = addr0;
++                /* I/O case */
++		fprintf(stderr, "%s : IO Case\n", __func__); fflush(stderr);
++                io_index = (pd >> IO_MEM_SHIFT) & (IO_MEM_NB_ENTRIES - 1);
++                if (p)
++                    addr1 = (addr & ~TARGET_PAGE_MASK) + p->region_offset;
++                if (l >= 4 && ((addr1 & 3) == 0)) {
++                    /* 32 bit read access */
++                    val = io_mem_read[io_index][2](io_mem_opaque[io_index], addr1);
++                    stl_p(buf, val);
++                    l = 4;
++                } else if (l >= 2 && ((addr1 & 1) == 0)) {
++                    /* 16 bit read access */
++                    val = io_mem_read[io_index][1](io_mem_opaque[io_index], addr1);
++                    stw_p(buf, val);
++                    l = 2;
++                } else {
++                    /* 8 bit read access */
++                    val = io_mem_read[io_index][0](io_mem_opaque[io_index], addr1);
++                    stb_p(buf, val);
++                    l = 1;
++                }
++            } else {
++                /* RAM case */
++                ptr = qemu_get_ram_ptr(pd & TARGET_PAGE_MASK) +
++                    (addr0 & ~TARGET_PAGE_MASK);
++                memcpy(buf, ptr, l);
++		fprintf(stderr, "%s : pointer is %p \n", __func__, ptr); fflush(stderr);
++            }
++        }
++        len -= l;
++        buf += l;
++        addr += l;
++    }
++}
++
++
+diff --git a/hw/device-assignment.c b/hw/device-assignment.c
+index f4a1e32..f720fa6 100644
+--- a/hw/device-assignment.c
++++ b/hw/device-assignment.c
+@@ -36,6 +36,7 @@
+ #include "sysemu.h"
+ #include "console.h"
+ #include "device-assignment.h"
++#include "intel_iommu.h"
+ #include "loader.h"
+ #include <pci/pci.h>
+ 
+@@ -346,6 +347,14 @@ static void assigned_dev_ioport_map(PCIDevice *pci_dev, int region_num,
+                           (r_dev->v_addrs + region_num));
+ }
+ 
++static int pci_copy(uint8_t* buf, struct pci_dev *pci_dev, int start_pos, int length)
++{
++    int i;
++    for (i=0; i<length; i++)
++	buf[i] = pci_read_byte(pci_dev, start_pos+i);
++    return 0;
++}
++
+ static uint8_t pci_find_cap_offset(struct pci_dev *pci_dev, uint8_t cap)
+ {
+     int id;
+@@ -752,7 +761,7 @@ static void free_assigned_device(AssignedDevice *dev)
+     }
+ }
+ 
+-static uint32_t calc_assigned_dev_id(uint8_t bus, uint8_t devfn)
++uint32_t calc_assigned_dev_id(uint8_t bus, uint8_t devfn)
+ {
+     return (uint32_t)bus << 8 | (uint32_t)devfn;
+ }
+@@ -1184,6 +1193,8 @@ static int assigned_device_pci_cap_init(PCIDevice *pci_dev)
+     AssignedDevice *dev = container_of(pci_dev, AssignedDevice, dev);
+     PCIRegion *pci_region = dev->real_device.regions;
+     int next_cap_pt = 0;
++    uint8_t* prev_pointer = NULL;
++    int offset;
+ 
+     pci_dev->cap.length = 0;
+ #ifdef KVM_CAP_IRQ_ROUTING
+@@ -1196,10 +1207,27 @@ static int assigned_device_pci_cap_init(PCIDevice *pci_dev)
+                0, PCI_CAPABILITY_CONFIG_MSI_LENGTH);
+         pci_dev->config[pci_dev->cap.start + pci_dev->cap.length] =
+                         PCI_CAP_ID_MSI;
++	prev_pointer = &pci_dev->config[pci_dev->cap.start + pci_dev->cap.length + 1];
+         pci_dev->cap.length += PCI_CAPABILITY_CONFIG_MSI_LENGTH;
+         next_cap_pt = 1;
+     }
+ #endif
++    if (0 && (offset = pci_find_cap_offset(dev->pdev, PCI_CAP_ID_PM))) {
++	fprintf(stderr, "!!!!!! %s: FOUND PCI_CAP_ID_PM\n", __func__);
++        memset(&pci_dev->config[pci_dev->cap.start + pci_dev->cap.length],
++               0, PCI_CAPABILITY_CONFIG_PM_LENGTH);
++	/*pci_dev->config[pci_dev->cap.start + pci_dev->cap.length] = 
++			PCI_CAP_ID_PM;*/
++	pci_copy(&pci_dev->config[pci_dev->cap.start + pci_dev->cap.length], 
++		dev->pdev, offset, PCI_CAPABILITY_CONFIG_PM_LENGTH);
++	*prev_pointer = pci_dev->cap.start + pci_dev->cap.length;
++	fprintf(stderr, "%s : start %x length %x\n", __func__, pci_dev->cap.start, pci_dev->cap.length);
++	fflush(stderr);
++	prev_pointer = &pci_dev->config[pci_dev->cap.start + pci_dev->cap.length + 1];
++	pci_dev->cap.length += PCI_CAPABILITY_CONFIG_PM_LENGTH;
++	next_cap_pt++;
++	*prev_pointer = 0;
++    }
+ #ifdef KVM_CAP_DEVICE_MSIX
+     /* Expose MSI-X capability */
+     if (pci_find_cap_offset(dev->pdev, PCI_CAP_ID_MSIX)) {
+@@ -1369,6 +1397,8 @@ static int assigned_initfn(struct PCIDevice *pci_dev)
+ 
+     assigned_dev_load_option_rom(dev);
+     QLIST_INSERT_HEAD(&devs, dev, next);
++
++    intel_iommu_add_dev(pci_bus_num(dev->dev.bus), dev->dev.devfn, dev->h_busnr, dev->h_devfn);
+     return 0;
+ 
+ assigned_out:
+@@ -1638,3 +1668,32 @@ static void assigned_dev_load_option_rom(AssignedDevice *dev)
+     }
+     free(buf);
+ }
++
++int is_device_assigned(unsigned char busnr, unsigned int devfn)
++{
++	struct AssignedDevice* dev;
++	QLIST_FOREACH(dev, &devs, next) {
++		if (pci_bus_num(dev->dev.bus) == busnr && dev->dev.devfn == devfn)
++			return 1;
++	}
++	return 0;
++}
++
++int get_host_assigned_dev(uint8_t busnr, uint8_t devfn, uint8_t* h_busnr, uint8_t* h_devfn)
++{
++	struct AssignedDevice* dev;
++	QLIST_FOREACH(dev, &devs, next) {
++		if (pci_bus_num(dev->dev.bus) == busnr && dev->dev.devfn == devfn) {
++			*h_busnr = dev->h_busnr;
++			*h_devfn = dev->h_devfn;
++			return 0;
++		}
++	}
++	return -1;
++}
++
++int is_any_device_assigned(void)
++{
++	return !QLIST_EMPTY(&devs);
++}
++
+diff --git a/hw/device-assignment.h b/hw/device-assignment.h
+index a231260..0499047 100644
+--- a/hw/device-assignment.h
++++ b/hw/device-assignment.h
+@@ -108,6 +108,10 @@ typedef struct AssignedDevice {
+ QemuOpts *add_assigned_device(const char *arg);
+ void add_assigned_devices(PCIBus *bus, const char **devices, int n_devices);
+ void assigned_dev_update_irqs(void);
++int is_device_assigned(unsigned char busnr, unsigned int devfn);
++int is_any_device_assigned(void);
++int get_host_assigned_dev(uint8_t busnr, uint8_t devfn, uint8_t* h_busnr, uint8_t* h_devfn);
++uint32_t calc_assigned_dev_id(uint8_t bus, uint8_t devfn);
+ 
+ #define MAX_DEV_ASSIGN_CMDLINE 8
+ 
+diff --git a/hw/e1000.c b/hw/e1000.c
+index fd3059a..fd96e3c 100644
+--- a/hw/e1000.c
++++ b/hw/e1000.c
+@@ -410,6 +410,7 @@ process_tx_desc(E1000State *s, struct e1000_tx_desc *dp)
+     uint64_t addr;
+     struct e1000_context_desc *xp = (struct e1000_context_desc *)dp;
+     struct e1000_tx *tp = &s->tx;
++    int err;
+ 
+     if (dtype == E1000_TXD_CMD_DEXT) {	// context descriptor
+         op = le32_to_cpu(xp->cmd_and_length);
+@@ -456,8 +457,11 @@ process_tx_desc(E1000State *s, struct e1000_tx_desc *dp)
+             bytes = split_size;
+             if (tp->size + bytes > msh)
+                 bytes = msh - tp->size;
+-            cpu_physical_memory_read(addr, tp->data + tp->size, bytes);
+-            if ((sz = tp->size + bytes) >= hdr && tp->size < hdr)
++            cpu_physical_memory_read_io(addr, tp->data + tp->size, bytes,
++		 s->dev.devfn, &err);
++            if (err)
++		continue;
++	    if ((sz = tp->size + bytes) >= hdr && tp->size < hdr)
+                 memmove(tp->header, tp->data, hdr);
+             tp->size = sz;
+             addr += bytes;
+@@ -471,8 +475,10 @@ process_tx_desc(E1000State *s, struct e1000_tx_desc *dp)
+         // context descriptor TSE is not set, while data descriptor TSE is set
+         DBGOUT(TXERR, "TCP segmentaion Error\n");
+     } else {
+-        cpu_physical_memory_read(addr, tp->data + tp->size, split_size);
+-        tp->size += split_size;
++        cpu_physical_memory_read_io(addr, tp->data + tp->size, split_size,
++		s->dev.devfn, &err);
++	if (!err)
++        	tp->size += split_size;
+     }
+ 
+     if (!(txd_lower & E1000_TXD_CMD_EOP))
+@@ -487,17 +493,19 @@ process_tx_desc(E1000State *s, struct e1000_tx_desc *dp)
+ }
+ 
+ static uint32_t
+-txdesc_writeback(target_phys_addr_t base, struct e1000_tx_desc *dp)
++txdesc_writeback(target_phys_addr_t base, struct e1000_tx_desc *dp, E1000State *s)
+ {
+     uint32_t txd_upper, txd_lower = le32_to_cpu(dp->lower.data);
++    int err;
+ 
+     if (!(txd_lower & (E1000_TXD_CMD_RS|E1000_TXD_CMD_RPS)))
+         return 0;
+     txd_upper = (le32_to_cpu(dp->upper.data) | E1000_TXD_STAT_DD) &
+                 ~(E1000_TXD_STAT_EC | E1000_TXD_STAT_LC | E1000_TXD_STAT_TU);
+     dp->upper.data = cpu_to_le32(txd_upper);
+-    cpu_physical_memory_write(base + ((char *)&dp->upper - (char *)dp),
+-                              (void *)&dp->upper, sizeof(dp->upper));
++    cpu_physical_memory_write_io(base + ((char *)&dp->upper - (char *)dp),
++                              (void *)&dp->upper, sizeof(dp->upper),
++			      s->dev.devfn, &err);
+     return E1000_ICR_TXDW;
+ }
+ 
+@@ -507,6 +515,7 @@ start_xmit(E1000State *s)
+     target_phys_addr_t base;
+     struct e1000_tx_desc desc;
+     uint32_t tdh_start = s->mac_reg[TDH], cause = E1000_ICS_TXQE;
++    int err;
+ 
+     if (!(s->mac_reg[TCTL] & E1000_TCTL_EN)) {
+         DBGOUT(TX, "tx disabled\n");
+@@ -516,14 +525,15 @@ start_xmit(E1000State *s)
+     while (s->mac_reg[TDH] != s->mac_reg[TDT]) {
+         base = ((uint64_t)s->mac_reg[TDBAH] << 32) + s->mac_reg[TDBAL] +
+                sizeof(struct e1000_tx_desc) * s->mac_reg[TDH];
+-        cpu_physical_memory_read(base, (void *)&desc, sizeof(desc));
++        cpu_physical_memory_read_io(base, (void *)&desc, sizeof(desc),
++		s->dev.devfn, &err);
+ 
+         DBGOUT(TX, "index %d: %p : %x %x\n", s->mac_reg[TDH],
+                (void *)(intptr_t)desc.buffer_addr, desc.lower.data,
+                desc.upper.data);
+ 
+         process_tx_desc(s, &desc);
+-        cause |= txdesc_writeback(base, &desc);
++        cause |= txdesc_writeback(base, &desc, s);
+ 
+         if (++s->mac_reg[TDH] * sizeof(desc) >= s->mac_reg[TDLEN])
+             s->mac_reg[TDH] = 0;
+@@ -627,6 +637,7 @@ e1000_receive(VLANClientState *nc, const uint8_t *buf, size_t size)
+     uint32_t rdh_start;
+     uint16_t vlan_special = 0;
+     uint8_t vlan_status = 0, vlan_offset = 0;
++    int err;
+ 
+     if (!(s->mac_reg[RCTL] & E1000_RCTL_EN))
+         return -1;
+@@ -657,18 +668,24 @@ e1000_receive(VLANClientState *nc, const uint8_t *buf, size_t size)
+         }
+         base = ((uint64_t)s->mac_reg[RDBAH] << 32) + s->mac_reg[RDBAL] +
+                sizeof(desc) * s->mac_reg[RDH];
+-        cpu_physical_memory_read(base, (void *)&desc, sizeof(desc));
++        cpu_physical_memory_read_io(base, (void *)&desc, sizeof(desc),
++		s->dev.devfn, &err);
++	if (err)
++		return -1;
+         desc.special = vlan_special;
+         desc.status |= (vlan_status | E1000_RXD_STAT_DD);
+         if (desc.buffer_addr) {
+-            cpu_physical_memory_write(le64_to_cpu(desc.buffer_addr),
+-                                      (void *)(buf + vlan_offset), size);
++            cpu_physical_memory_write_io(le64_to_cpu(desc.buffer_addr),
++                                      (void *)(buf + vlan_offset), size,
++				      s->dev.devfn, &err);
+             desc.length = cpu_to_le16(size);
+             desc.status |= E1000_RXD_STAT_EOP|E1000_RXD_STAT_IXSM;
+         } else // as per intel docs; skip descriptors with null buf addr
+             DBGOUT(RX, "Null RX descriptor!!\n");
+-        cpu_physical_memory_write(base, (void *)&desc, sizeof(desc));
+-
++        cpu_physical_memory_write_io(base, (void *)&desc, sizeof(desc),
++		s->dev.devfn, &err);
++	if (err)
++		return -1;
+         if (++s->mac_reg[RDH] * sizeof(desc) >= s->mac_reg[RDLEN])
+             s->mac_reg[RDH] = 0;
+         s->check_rxov = 1;
+diff --git a/hw/ide/core.c b/hw/ide/core.c
+index 76c3820..9849a6b 100644
+--- a/hw/ide/core.c
++++ b/hw/ide/core.c
+@@ -34,6 +34,8 @@
+ #include "dma.h"
+ 
+ #include <hw/ide/internal.h>
++#include "qemu-common.h"
++#include <hw/ide/pci.h>
+ 
+ static int smart_attributes[][5] = {
+     /* id,  flags, val, wrst, thrsh */
+@@ -431,6 +433,7 @@ static int dma_buf_prepare(BMDMAState *bm, int is_write)
+         uint32_t size;
+     } prd;
+     int l, len;
++    int err;
+ 
+     qemu_sglist_init(&s->sg, s->nsector / (TARGET_PAGE_SIZE/512) + 1);
+     s->io_buffer_size = 0;
+@@ -440,8 +443,11 @@ static int dma_buf_prepare(BMDMAState *bm, int is_write)
+             if (bm->cur_prd_last ||
+                 (bm->cur_addr - bm->addr) >= 4096)
+                 return s->io_buffer_size != 0;
+-            cpu_physical_memory_read(bm->cur_addr, (uint8_t *)&prd, 8);
+-            bm->cur_addr += 8;
++            cpu_physical_memory_read_io(bm->cur_addr, (uint8_t *)&prd, 8,
++		bm->pci_dev->dev.devfn, &err);
++            if (err)
++		return 0;
++	    bm->cur_addr += 8;
+             prd.addr = le32_to_cpu(prd.addr);
+             prd.size = le32_to_cpu(prd.size);
+             len = prd.size & 0xfffe;
+@@ -509,6 +515,7 @@ static int dma_buf_rw(BMDMAState *bm, int is_write)
+         uint32_t size;
+     } prd;
+     int l, len;
++    int err;
+ 
+     for(;;) {
+         l = s->io_buffer_size - s->io_buffer_index;
+@@ -519,7 +526,11 @@ static int dma_buf_rw(BMDMAState *bm, int is_write)
+             if (bm->cur_prd_last ||
+                 (bm->cur_addr - bm->addr) >= 4096)
+                 return 0;
+-            cpu_physical_memory_read(bm->cur_addr, (uint8_t *)&prd, 8);
++
++            cpu_physical_memory_read_io(bm->cur_addr, (uint8_t *)&prd, 8,
++		bm->pci_dev->dev.devfn, &err);
++            if (err)
++		return 0;
+             bm->cur_addr += 8;
+             prd.addr = le32_to_cpu(prd.addr);
+             prd.size = le32_to_cpu(prd.size);
+@@ -534,11 +545,13 @@ static int dma_buf_rw(BMDMAState *bm, int is_write)
+             l = bm->cur_prd_len;
+         if (l > 0) {
+             if (is_write) {
+-                cpu_physical_memory_write(bm->cur_prd_addr,
+-                                          s->io_buffer + s->io_buffer_index, l);
++                cpu_physical_memory_write_io(bm->cur_prd_addr,
++                                          s->io_buffer + s->io_buffer_index, l,
++					  bm->pci_dev->dev.devfn, &err);
+             } else {
+-                cpu_physical_memory_read(bm->cur_prd_addr,
+-                                          s->io_buffer + s->io_buffer_index, l);
++                cpu_physical_memory_read_io(bm->cur_prd_addr,
++                                          s->io_buffer + s->io_buffer_index, l,
++				  	  bm->pci_dev->dev.devfn, &err);
+             }
+             bm->cur_prd_addr += l;
+             bm->cur_prd_len -= l;
+@@ -594,7 +607,8 @@ static void ide_read_dma_cb(void *opaque, int ret)
+ #ifdef DEBUG_AIO
+     printf("aio_read: sector_num=%" PRId64 " n=%d\n", sector_num, n);
+ #endif
+-    bm->aiocb = dma_bdrv_read(s->bs, &s->sg, sector_num, ide_read_dma_cb, bm);
++    bm->aiocb = dma_bdrv_read(s->bs, &s->sg, sector_num, ide_read_dma_cb, bm,
++	bm->pci_dev->dev.devfn);
+     ide_dma_submit_check(s, ide_read_dma_cb, bm);
+ }
+ 
+@@ -740,7 +754,8 @@ static void ide_write_dma_cb(void *opaque, int ret)
+ #ifdef DEBUG_AIO
+     printf("aio_write: sector_num=%" PRId64 " n=%d\n", sector_num, n);
+ #endif
+-    bm->aiocb = dma_bdrv_write(s->bs, &s->sg, sector_num, ide_write_dma_cb, bm);
++    bm->aiocb = dma_bdrv_write(s->bs, &s->sg, sector_num, ide_write_dma_cb, bm,
++	bm->pci_dev->dev.devfn);
+     ide_dma_submit_check(s, ide_write_dma_cb, bm);
+ }
+ 
+diff --git a/hw/intel_iommu.c b/hw/intel_iommu.c
+new file mode 100644
+index 0000000..c178394
+--- /dev/null
++++ b/hw/intel_iommu.c
+@@ -0,0 +1,227 @@
++#include <stddef.h>
++#include <assert.h>
++#include <stdint.h>
++
++#include "intel_iommu.h"
++/*
++#include "hw.h"
++#include "pci.h"
++#include "net.h"*/
++/*#include <sys/intel-iommu.h>*/
++#include "device-assignment.h"
++#include "../qemu-kvm.h"
++#include "../qemu-queue.h"
++#include "../qemu-thread.h"
++#include <sys/ioctl.h>
++#include <search.h>
++#include <stdlib.h>
++
++#define VIOMMU_ENABLED 1
++#define DMAR_DEVICES_NUM 1
++#define DMAR_REG_BASE 0xFED10000
++/*#define SIDECORE_MONITORING 1*/
++
++#define VTD_PAGE_SIZE 0x1000
++
++
++static int sidecore_monitoring;
++
++/* following should be left only if logging is required */
++/*
++#define IOTLB_LOG
++*/
++/*
++#define pr_fmt(fmt) "%s: " fmt 
++*/
++#define pr_debug(fmt, ...) 						\
++	do {								\
++        	fprintf( stderr, "%s : " fmt "\n",			\
++			__func__, ##__VA_ARGS__);			\
++		fflush (stderr); 					\
++	} while (0)
++
++
++void qemu_viommu_sidecore(void)
++{
++	pr_debug("%s : enable sidecore\n", __func__);
++	sidecore_monitoring = 1;
++}
++
++struct qemu_intel_iommu {
++    int mmio_index;
++    int mfd;
++    void* pregs;
++};
++
++struct qemu_intel_iommu qemu_intel_iommu;
++
++/*
++Software is expected to access 32-bit registers as aligned doublewords. For example, to modify a
++field (e.g., bit or byte) in a 32-bit register, the entire doubleword is read, the appropriate field(s)
++are modified, and the entire doubleword is written back.
++*/
++
++static void
++intel_iommu_writel(void *opaque, target_phys_addr_t addr, uint32_t val)
++{
++	int ret;
++	struct viommu_write data;
++	data.offset = addr;
++	data.value = val;
++	ret = (kvm_vm_ioctl(kvm_state, KVM_VIOMMU_WRITE, &data) < 0);
++	if (ret)	
++		fprintf(stderr, "%s : could not enable VIOMMU\n", __func__);
++}
++
++static void
++intel_iommu_writew(void *opaque, target_phys_addr_t addr, uint32_t val)
++{
++    // emulate hw without byte enables: no RMW
++    intel_iommu_writel(opaque, addr & ~3,
++                      (val & 0xffff) << (8*(addr & 3)));
++}
++
++static void
++intel_iommu_writeb(void *opaque, target_phys_addr_t addr, uint32_t val)
++{
++    // emulate hw without byte enables: no RMW
++    intel_iommu_writel(opaque, addr & ~3,
++                      (val & 0xff) << (8*(addr & 3)));
++}
++
++static uint32_t
++intel_iommu_readl(void *opaque, target_phys_addr_t addr)
++{
++	struct qemu_intel_iommu* iommu = &qemu_intel_iommu;
++	return *(uint32_t*)(iommu->pregs + (addr & (VTD_PAGE_SIZE-1)));
++}
++
++static uint32_t
++intel_iommu_readb(void *opaque, target_phys_addr_t addr)
++{
++    return ((intel_iommu_readl(opaque, addr & ~3)) >>
++            (8 * (addr & 3))) & 0xff;
++}
++
++static uint32_t
++intel_iommu_readw(void *opaque, target_phys_addr_t addr)
++{
++    return ((intel_iommu_readl(opaque, addr & ~3)) >>
++            (8 * (addr & 3))) & 0xffff;
++}
++
++static 
++void iommu_reset(void *opaque)
++{
++
++}
++
++static CPUWriteMemoryFunc *intel_iommu_write[] = {
++    intel_iommu_writeb,	intel_iommu_writew, intel_iommu_writel
++};
++
++static CPUReadMemoryFunc *intel_iommu_read[] = {
++    intel_iommu_readb,	intel_iommu_readw, intel_iommu_readl
++};
++
++static void iommu_mmio_map(void) 
++{
++	struct qemu_intel_iommu* iommu = &qemu_intel_iommu;
++	target_phys_addr_t addr = DMAR_REG_BASE;
++	struct viommu_enable enable_data;
++	int ret = 0 ;
++	
++	iommu->pregs = qemu_memalign(VTD_PAGE_SIZE, VTD_PAGE_SIZE);
++	enable_data.addr = (uint64_t)iommu->pregs;
++	enable_data.sidecore = sidecore_monitoring;
++
++	if (!sidecore_monitoring) {
++		/* when no sidecore_monitoring enabled, VM-exit will occur on any access */
++	    	iommu->mmio_index = cpu_register_io_memory(intel_iommu_read,
++        		intel_iommu_write, NULL);
++	   	cpu_register_physical_memory(addr, VTD_PAGE_SIZE, iommu->mmio_index);
++	} else {
++		/* allocating actual memory for the regs */
++		kvm_register_phys_mem(kvm_context, addr, iommu->pregs, VTD_PAGE_SIZE, 0);
++	
++	}
++
++	if ((ret = kvm_vm_ioctl(kvm_state, KVM_ENABLE_VIOMMU, &enable_data)) < 0) {
++		fprintf(stderr, "%s : could not enable VIOMMU\n", __func__);
++		exit(1);
++	}
++}
++
++void intel_iommu_init(void) {
++	if (!VIOMMU_ENABLED)
++		return;
++	iommu_mmio_map();
++	iommu_reset(NULL);
++}
++
++void intel_iommu_exit(void) {
++	int ret;
++	if ((ret = kvm_vm_ioctl(kvm_state, KVM_DISABLE_VIOMMU)) < 0) {
++		fprintf(stderr, "%s : could not disable VIOMMU\n", __func__);
++		exit(1);
++	}
++}
++
++/* Translation related functions */
++static inline int aw_to_levels(int aw) {
++	return aw+2;
++}
++
++
++/* Main translation function */
++uint64_t iommu_phy_addr_translate(target_phys_addr_t addr,
++                            int is_write, int devfn, int* err)
++{
++	struct iommu_translate trans;
++	int e = 0;
++	if (!VIOMMU_ENABLED)
++		return addr;
++	trans.iova = addr;
++	trans.g_busnr = (((uint32_t)devfn) >> 8) & 0xFF;
++	trans.g_devfn = (uint8_t)(devfn & 0xFF);
++	trans.is_write = is_write;
++	trans.err = 0;
++	trans.gpa = 0;
++	if ((e = kvm_vm_ioctl(kvm_state, KVM_VIOMMU_TRANSLATE, &trans)) < 0) {
++		fprintf(stderr, "ioctl(VIOMMU_TRANSLATE) returned %d "
++			"(errno %s)\n", e, strerror(errno));
++	}	
++	
++	return trans.gpa;	
++}
++
++static inline
++uint8_t get_devfn(uint16_t sid) 
++{
++	return (sid & 0xFF); 
++}
++
++static inline
++uint8_t get_busnr(uint16_t sid) 
++{
++	return (sid>>8)&0xFF;
++}
++
++void intel_iommu_add_dev(uint8_t g_busnr, uint16_t g_devfn, uint8_t h_busnr, uint16_t h_devfn)
++{
++	struct devfn_mapping mapping;
++	int ret;
++	mapping.g_busnr = g_busnr;
++	mapping.g_devfn = g_devfn;
++	mapping.h_busnr = h_busnr;
++	mapping.h_devfn = h_devfn;
++	if ((ret = kvm_vm_ioctl(kvm_state, KVM_VIOMMU_SET_DEVFN_MAP, &mapping)) < 0) {
++		fprintf(stderr, "ioctl(VIOMMU_SET_DEVFN_MAP) returned %d "
++			"(errno %s)\n", ret, strerror(errno));
++		goto out;
++	}
++
++out:
++	;	
++}
++
+diff --git a/hw/intel_iommu.h b/hw/intel_iommu.h
+new file mode 100644
+index 0000000..4103151
+--- /dev/null
++++ b/hw/intel_iommu.h
+@@ -0,0 +1,54 @@
++#ifndef _INTEL_IOMMU_H_
++#define _INTEL_IOMMU_H_
++
++#include <linux/ioctl.h>
++#include "hw.h"
++
++
++struct iommu_translate {
++        uint64_t iova;
++        uint64_t gpa;
++	int err;
++        uint8_t g_busnr;
++        uint8_t g_devfn;
++	int is_write;
++};
++
++struct devfn_mapping {
++        uint8_t g_busnr;
++        uint8_t g_devfn;
++        uint8_t h_busnr;
++        uint8_t h_devfn;
++};
++
++struct viommu_enable {
++        uint64_t addr;
++        uint8_t sidecore;
++};
++
++struct viommu_write {
++        uint32_t offset;
++        uint32_t value;
++};
++
++#if 0
++#define MMONITOR_IOCTL_BASE     'L'
++#define MMONITOR_GET_PHYS	   _IOW(MMONITOR_IOCTL_BASE,  0, void*)
++#define MMONITOR_SET_TIMER_MODE    _IOR(MMONITOR_IOCTL_BASE,  1, int)
++#endif
++
++
++/* Init the IOMMU emulation */
++void intel_iommu_init(void);
++void intel_iommu_exit(void);
++
++void intel_iommu_add_dev(uint8_t g_busnr, uint16_t g_devfn, uint8_t h_busnr, uint16_t h_devfn);
++
++/* Translate the physical address */
++uint64_t iommu_phy_addr_translate(target_phys_addr_t addr,
++                            int is_write, int devfn, int* err);
++							
++
++void qemu_viommu_sidecore(void);
++
++#endif
+diff --git a/hw/lsi53c895a.c b/hw/lsi53c895a.c
+index f6660a3..fe09195 100644
+--- a/hw/lsi53c895a.c
++++ b/hw/lsi53c895a.c
+@@ -372,6 +372,28 @@ static void lsi_reg_writeb(LSIState *s, int offset, uint8_t val);
+ static void lsi_execute_script(LSIState *s);
+ static void lsi_reselect(LSIState *s, uint32_t tag);
+ 
++static void lsi_physical_memory_read(target_phys_addr_t addr,
++									uint8_t *buf, int len,
++									LSIState *s)
++{
++	/* read from SCRIPTS RAM does not go through IOMMU */
++	if (addr >= s->script_ram_base && addr < s->script_ram_base + 0x2000)
++		cpu_physical_memory_read(addr, buf, len);
++	else
++		cpu_physical_memory_read_io(addr, buf, len, s->dev.devfn, NULL);
++}							  
++							  
++static void lsi_physical_memory_write(target_phys_addr_t addr,
++									uint8_t *buf, int len,
++									LSIState *s)
++{
++	/* write from SCRIPTS RAM does not go through IOMMU */
++	if (addr >= s->script_ram_base && addr < s->script_ram_base + 0x2000)
++		cpu_physical_memory_write(addr, buf, len);
++	else
++		cpu_physical_memory_write_io(addr, buf, len, s->dev.devfn, NULL);
++}	
++
+ static inline uint32_t read_dword(LSIState *s, uint32_t addr)
+ {
+     uint32_t buf;
+@@ -380,7 +402,7 @@ static inline uint32_t read_dword(LSIState *s, uint32_t addr)
+     if ((addr & 0xffffe000) == s->script_ram_base) {
+         return s->script_ram[(addr & 0x1fff) >> 2];
+     }
+-    cpu_physical_memory_read(addr, (uint8_t *)&buf, 4);
++    lsi_physical_memory_read(addr, (uint8_t *)&buf, 4, s);
+     return cpu_to_le32(buf);
+ }
+ 
+@@ -539,9 +561,9 @@ static void lsi_do_dma(LSIState *s, int out)
+ 
+     /* ??? Set SFBR to first data byte.  */
+     if (out) {
+-        cpu_physical_memory_read(addr, s->dma_buf, count);
++        lsi_physical_memory_read(addr, s->dma_buf, count, s);
+     } else {
+-        cpu_physical_memory_write(addr, s->dma_buf, count);
++        lsi_physical_memory_write(addr, s->dma_buf, count, s);
+     }
+     s->current_dma_len -= count;
+     if (s->current_dma_len == 0) {
+@@ -718,7 +740,7 @@ static void lsi_do_command(LSIState *s)
+     DPRINTF("Send command len=%d\n", s->dbc);
+     if (s->dbc > 16)
+         s->dbc = 16;
+-    cpu_physical_memory_read(s->dnad, buf, s->dbc);
++    lsi_physical_memory_read(s->dnad, buf, s->dbc, s);
+     s->sfbr = buf[0];
+     s->command_complete = 0;
+     n = s->current_dev->info->send_command(s->current_dev, s->current_tag, buf,
+@@ -756,7 +778,7 @@ static void lsi_do_status(LSIState *s)
+     s->dbc = 1;
+     sense = s->sense;
+     s->sfbr = sense;
+-    cpu_physical_memory_write(s->dnad, &sense, 1);
++    lsi_physical_memory_write(s->dnad, &sense, 1, s);
+     lsi_set_phase(s, PHASE_MI);
+     s->msg_action = 1;
+     lsi_add_msg_byte(s, 0); /* COMMAND COMPLETE */
+@@ -776,7 +798,7 @@ static void lsi_do_msgin(LSIState *s)
+     len = s->msg_len;
+     if (len > s->dbc)
+         len = s->dbc;
+-    cpu_physical_memory_write(s->dnad, s->msg, len);
++    lsi_physical_memory_write(s->dnad, s->msg, len, s);
+     /* Linux drivers rely on the last byte being in the SIDL.  */
+     s->sidl = s->msg[len - 1];
+     s->msg_len -= len;
+@@ -808,7 +830,7 @@ static void lsi_do_msgin(LSIState *s)
+ static uint8_t lsi_get_msgbyte(LSIState *s)
+ {
+     uint8_t data;
+-    cpu_physical_memory_read(s->dnad, &data, 1);
++    lsi_physical_memory_read(s->dnad, &data, 1, s);
+     s->dnad++;
+     s->dbc--;
+     return data;
+@@ -895,8 +917,8 @@ static void lsi_memcpy(LSIState *s, uint32_t dest, uint32_t src, int count)
+     DPRINTF("memcpy dest 0x%08x src 0x%08x count %d\n", dest, src, count);
+     while (count) {
+         n = (count > LSI_BUF_SIZE) ? LSI_BUF_SIZE : count;
+-        cpu_physical_memory_read(src, buf, n);
+-        cpu_physical_memory_write(dest, buf, n);
++        lsi_physical_memory_read(src, buf, n, s);
++        lsi_physical_memory_write(dest, buf, n, s);
+         src += n;
+         dest += n;
+         count -= n;
+@@ -964,7 +986,7 @@ again:
+ 
+             /* 32-bit Table indirect */
+             offset = sxt24(addr);
+-            cpu_physical_memory_read(s->dsa + offset, (uint8_t *)buf, 8);
++            lsi_physical_memory_read(s->dsa + offset, (uint8_t *)buf, 8, s);
+             /* byte count is stored in bits 0:23 only */
+             s->dbc = cpu_to_le32(buf[0]) & 0xffffff;
+             s->rbc = s->dbc;
+@@ -1326,7 +1348,7 @@ again:
+             n = (insn & 7);
+             reg = (insn >> 16) & 0xff;
+             if (insn & (1 << 24)) {
+-                cpu_physical_memory_read(addr, data, n);
++                lsi_physical_memory_read(addr, data, n, s);
+                 DPRINTF("Load reg 0x%x size %d addr 0x%08x = %08x\n", reg, n,
+                         addr, *(int *)data);
+                 for (i = 0; i < n; i++) {
+@@ -1337,7 +1359,7 @@ again:
+                 for (i = 0; i < n; i++) {
+                     data[i] = lsi_reg_readb(s, reg + i);
+                 }
+-                cpu_physical_memory_write(addr, data, n);
++                lsi_physical_memory_write(addr, data, n, s);
+             }
+         }
+     }
+diff --git a/hw/pc.c b/hw/pc.c
+index 492d3de..284e8c9 100644
+--- a/hw/pc.c
++++ b/hw/pc.c
+@@ -46,6 +46,8 @@
+ #include "elf.h"
+ #include "device-assignment.h"
+ 
++#include "intel_iommu.h"
++
+ #include "qemu-kvm.h"
+ 
+ /* output Bochs bios info messages */
+@@ -1234,6 +1236,7 @@ static void pc_init1(ram_addr_t ram_size,
+ 
+     isa_dev = isa_create_simple("i8042");
+     DMA_init(0);
++    intel_iommu_init();
+ #ifdef HAS_AUDIO
+     audio_init(pci_enabled ? pci_bus : NULL, isa_irq);
+ #endif
+diff --git a/hw/pci.h b/hw/pci.h
+index 8c37f14..aecc594 100644
+--- a/hw/pci.h
++++ b/hw/pci.h
+@@ -135,6 +135,10 @@ enum {
+ #define PCI_CAPABILITY_CONFIG_DEFAULT_START_ADDR 0x40
+ #define PCI_CAPABILITY_CONFIG_MSI_LENGTH 0x10
+ #define PCI_CAPABILITY_CONFIG_MSIX_LENGTH 0x10
++#define PCI_CAPABILITY_CONFIG_VPD_LENGTH 0x18
++#define PCI_CAPABILITY_CONFIG_PM_LENGTH 0x8
++
++
+ 
+ struct PCIDevice {
+     DeviceState qdev;
+diff --git a/kvm/include/linux/kvm.h b/kvm/include/linux/kvm.h
+index db10887..5683037 100644
+--- a/kvm/include/linux/kvm.h
++++ b/kvm/include/linux/kvm.h
+@@ -625,6 +625,11 @@ struct kvm_clock_data {
+ /* Available with KVM_CAP_PIT_STATE2 */
+ #define KVM_GET_PIT2              _IOR(KVMIO,  0x9f, struct kvm_pit_state2)
+ #define KVM_SET_PIT2              _IOW(KVMIO,  0xa0, struct kvm_pit_state2)
++#define KVM_ENABLE_VIOMMU         _IOR(KVMIO,  0xa5, struct viommu_enable)
++#define KVM_VIOMMU_TRANSLATE      _IOWR(KVMIO, 0xa6, struct iommu_translate)
++#define KVM_VIOMMU_SET_DEVFN_MAP  _IOR(KVMIO, 0xa7, struct devfn_mapping)
++#define KVM_DISABLE_VIOMMU	  _IO(KVMIO, 0xa8)
++#define KVM_VIOMMU_WRITE	  _IOR(KVMIO, 0xa9, struct viommu_write)
+ 
+ /*
+  * ioctls for vcpu fds
+@@ -691,6 +696,27 @@ struct kvm_assigned_pci_dev {
+ 	};
+ };
+ 
++#define KVM_IOMMU_MAP_FRAME     1
++#define KVM_IOMMU_UNMAP_FRAME   2
++#define KVM_IOMMU_UNMAP_DOMAIN  3
++#define KVM_IOMMU_UNMAP_ALL     4
++
++struct kvm_iommu_single_op {
++	__u32 assigned_dev_id;
++	__u16 cmd;
++	__u16 flags;
++	__u64 size;
++	__u64 iova;
++	__u64 gpa;
++};
++
++struct kvm_iommu_ops {
++       __u16 ops_num;
++       struct kvm_iommu_single_op ops[1];
++};
++
++
++
+ #define KVM_DEV_IRQ_HOST_INTX    (1 << 0)
+ #define KVM_DEV_IRQ_HOST_MSI     (1 << 1)
+ #define KVM_DEV_IRQ_HOST_MSIX    (1 << 2)
+diff --git a/qemu-nbd.c b/qemu-nbd.c
+index 6707ea5..a261ece 100644
+--- a/qemu-nbd.c
++++ b/qemu-nbd.c
+@@ -30,7 +30,6 @@
+ #include <netinet/tcp.h>
+ #include <arpa/inet.h>
+ #include <signal.h>
+-#include <libgen.h>
+ 
+ #define SOCKET_PATH    "/var/lock/qemu-nbd-%s"
+ 
+diff --git a/qemu-options.hx b/qemu-options.hx
+index 774e6b9..e1259c3 100644
+--- a/qemu-options.hx
++++ b/qemu-options.hx
+@@ -1970,3 +1970,7 @@ DEF("mem-path", HAS_ARG, QEMU_OPTION_mempath,
+ DEF("mem-prealloc", 0, QEMU_OPTION_mem_prealloc,
+     "-mem-prealloc   preallocate guest memory (use with -mempath)\n")
+ #endif
++DEF("viommu-sidecore", 0, QEMU_OPTION_viommu_sidecore,
++    "-viommu-sidecore         enable sidecore emulation of IOMMU\n")
++
++
+diff --git a/vl.c b/vl.c
+index 9edea10..fa824b8 100644
+--- a/vl.c
++++ b/vl.c
+@@ -170,6 +170,8 @@ int main(int argc, char **argv)
+ 
+ #include "qemu-queue.h"
+ 
++#include "hw/intel_iommu.h"
++
+ //#define DEBUG_NET
+ //#define DEBUG_SLIRP
+ 
+@@ -5750,6 +5752,11 @@ int main(int argc, char **argv, char **envp)
+                     fclose(fp);
+                     break;
+                 }
++	    case QEMU_OPTION_viommu_sidecore:
++		{
++		    qemu_viommu_sidecore();
++		    break;
++		}
+             }
+         }
+     }

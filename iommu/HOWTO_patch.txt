@@ -1,0 +1,9 @@
+git clone git://git.kernel.org/pub/scm/virt/kvm/qemu-kvm.git
+git clone git://git.kernel.org/pub/scm/virt/kvm/kvm.git
+http://www.ndpsoftware.com/git-cheatsheet.html#loc=index
+SmartGit/Hg
+
+git checkout <commit sha1>
+git branch -d patching
+git checkout -b patching
+git am <path to patch>
